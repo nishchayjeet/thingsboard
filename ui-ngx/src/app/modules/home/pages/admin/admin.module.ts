@@ -38,6 +38,14 @@ import { JsResourceComponent } from '@home/pages/admin/resource/js-resource.comp
 import { NgxFlowModule } from '@flowjs/ngx-flow';
 import { TrendzSettingsComponent } from '@home/pages/admin/trendz-settings.component';
 import { ResourceLibraryTabsComponent } from '@home/pages/admin/resource/resource-library-tabs.component';
+import { WhiteLabelingComponent } from '@home/pages/admin/white-labeling.component';
+import { SchedulerEventsComponent } from '@home/pages/admin/pe/scheduler-events.component';
+import { RolesComponent } from '@home/pages/admin/pe/roles.component';
+import { IntegrationsComponent } from '@home/pages/admin/pe/integrations.component';
+import { ConvertersComponent } from '@home/pages/admin/pe/converters.component';
+import { CodecLibraryComponent } from '@home/pages/admin/pe/codec-library.component';
+import { SolutionTemplatesComponent } from '@home/pages/admin/pe/solution-templates.component';
+import { ReportsComponent } from '@home/pages/admin/pe/reports.component';
 
 @NgModule({
   declarations:
@@ -57,7 +65,15 @@ import { ResourceLibraryTabsComponent } from '@home/pages/admin/resource/resourc
       RepositoryAdminSettingsComponent,
       AutoCommitAdminSettingsComponent,
       TwoFactorAuthSettingsComponent,
-      TrendzSettingsComponent
+      TrendzSettingsComponent,
+      WhiteLabelingComponent,
+      SchedulerEventsComponent,
+      RolesComponent,
+      IntegrationsComponent,
+      ConvertersComponent,
+      CodecLibraryComponent,
+      SolutionTemplatesComponent,
+      ReportsComponent
     ],
   imports: [
     CommonModule,

@@ -109,7 +109,17 @@ export enum MenuId {
   version_control = 'version_control',
   api_usage = 'api_usage',
   trendz_settings = 'trendz_settings',
-  ai_models = 'ai_models'
+  ai_models = 'ai_models',
+  // PE-equivalent feature menu IDs:
+  pe_white_labeling = 'pe_white_labeling',
+  pe_scheduler = 'pe_scheduler',
+  pe_roles = 'pe_roles',
+  pe_integrations = 'pe_integrations',
+  pe_converters = 'pe_converters',
+  pe_codec_library = 'pe_codec_library',
+  pe_solution_templates = 'pe_solution_templates',
+  pe_reports = 'pe_reports',
+  pe_integration_center = 'pe_integration_center'
 }
 
 declare type MenuFilter = (authState: AuthState) => boolean;
@@ -740,6 +750,52 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       path: '/settings/trendz',
       icon: 'trendz-settings'
     }
+  ],
+  // ---------- PE-equivalent feature menu entries ----------
+  [
+    MenuId.pe_white_labeling,
+    { id: MenuId.pe_white_labeling, name: 'White labeling', type: 'link',
+      path: '/settings/white-labeling', icon: 'palette' }
+  ],
+  [
+    MenuId.pe_scheduler,
+    { id: MenuId.pe_scheduler, name: 'Scheduler', type: 'link',
+      path: '/settings/scheduler', icon: 'schedule' }
+  ],
+  [
+    MenuId.pe_roles,
+    { id: MenuId.pe_roles, name: 'Roles', type: 'link',
+      path: '/settings/roles', icon: 'admin_panel_settings' }
+  ],
+  [
+    MenuId.pe_integration_center,
+    { id: MenuId.pe_integration_center, name: 'Integration center', type: 'toggle',
+      path: '/settings', icon: 'input' }
+  ],
+  [
+    MenuId.pe_integrations,
+    { id: MenuId.pe_integrations, name: 'Integrations', type: 'link',
+      path: '/settings/integrations', icon: 'input' }
+  ],
+  [
+    MenuId.pe_converters,
+    { id: MenuId.pe_converters, name: 'Data converters', type: 'link',
+      path: '/settings/converters', icon: 'transform' }
+  ],
+  [
+    MenuId.pe_codec_library,
+    { id: MenuId.pe_codec_library, name: 'Device library', type: 'link',
+      path: '/settings/codec-library', icon: 'devices_other' }
+  ],
+  [
+    MenuId.pe_solution_templates,
+    { id: MenuId.pe_solution_templates, name: 'Solution templates', type: 'link',
+      path: '/settings/solution-templates', icon: 'auto_awesome_mosaic' }
+  ],
+  [
+    MenuId.pe_reports,
+    { id: MenuId.pe_reports, name: 'Reports', type: 'link',
+      path: '/settings/reports', icon: 'description' }
   ]
 ]);
 
@@ -851,8 +907,20 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         ]
       },
       {id: MenuId.customers},
+      {id: MenuId.pe_roles},
       {id: MenuId.calculated_fields},
       {id: MenuId.rule_chains},
+      {
+        id: MenuId.pe_integration_center,
+        pages: [
+          {id: MenuId.pe_integrations},
+          {id: MenuId.pe_converters},
+          {id: MenuId.pe_codec_library}
+        ]
+      },
+      {id: MenuId.pe_scheduler},
+      {id: MenuId.pe_reports},
+      {id: MenuId.pe_solution_templates},
       {
         id: MenuId.edge_management,
         pages: [
@@ -905,6 +973,7 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         id: MenuId.settings,
         pages: [
           {id: MenuId.home_settings},
+          {id: MenuId.pe_white_labeling},
           {id: MenuId.notification_settings},
           {id: MenuId.repository_settings},
           {id: MenuId.auto_commit_settings},
