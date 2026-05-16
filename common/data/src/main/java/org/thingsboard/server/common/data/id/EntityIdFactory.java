@@ -84,6 +84,13 @@ public class EntityIdFactory {
             case ADMIN_SETTINGS -> new AdminSettingsId(uuid);
             case AI_MODEL -> new AiModelId(uuid);
             case API_KEY -> new ApiKeyId(uuid);
+            case ROLE -> new RoleId(uuid);
+            case SCHEDULED_EVENT -> new ScheduledEventId(uuid);
+            case REPORT_CONFIG -> new ReportConfigId(uuid);
+            case INTEGRATION -> new IntegrationId(uuid);
+            case CONVERTER -> new ConverterId(uuid);
+            case PAYLOAD_CODEC -> new PayloadCodecId(uuid);
+            case SOLUTION_TEMPLATE -> new SolutionTemplateId(uuid);
         };
     }
 
