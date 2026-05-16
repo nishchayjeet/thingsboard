@@ -1,0 +1,89 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="pe-page">
+  <div class="pe-page-header">
+    <div class="pe-page-title">Solution templates <span class="pe-count">{{ total }}</span></div>
+  </div>
+
+  <div class="pe-filter-bar">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Category</mat-label>
+      <mat-select [(value)]="categoryFilter" (selectionChange)="load()">
+        <mat-option value="">All categories</mat-option>
+        <mat-option *ngFor="let c of categories()" [value]="c">{{ c }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon></button>
+  </div>
+
+  <div class="pe-page-body" [class.pe-page-body--single]="!selected">
+    <div class="pe-cards" style="overflow: auto;">
+      <div class="pe-card pe-card--clickable" *ngFor="let t of templates"
+           [class.selected]="selected?.id?.id === t.id?.id"
+           (click)="select(t)">
+        <div class="pe-card-title">{{ t.title || t.name }}</div>
+        <div class="pe-card-sub">{{ t.category || '—' }}</div>
+        <div class="pe-card-body">{{ t.description }}</div>
+        <div class="pe-card-sub">
+          {{ countOf(t, 'deviceProfiles') }} profiles ·
+          {{ countOf(t, 'ruleChains') }} rule chains ·
+          {{ countOf(t, 'dashboards') }} dashboards
+        </div>
+        <div class="pe-card-acts">
+          <button mat-raised-button color="primary"
+                  (click)="install(t); $event.stopPropagation()"
+                  [disabled]="t.id && installing[t.id.id]">
+            <mat-icon>cloud_download</mat-icon>
+            {{ t.id && installing[t.id.id] ? 'Installing…' : 'Install' }}
+          </button>
+        </div>
+      </div>
+      <div class="pe-empty" *ngIf="templates.length === 0">No solution templates available yet.</div>
+    </div>
+
+    <div class="pe-editor" *ngIf="selected">
+      <div class="pe-editor-title">{{ selected.title || selected.name }}</div>
+      <div class="pe-card-sub" style="margin-bottom: 12px;">{{ selected.category }}</div>
+      <p>{{ selected.description }}</p>
+
+      <div class="pe-section-label">Bundle contents</div>
+      <ul style="font-size: 13px; padding-left: 18px; margin: 4px 0 12px 0;">
+        <li>Device profiles: {{ countOf(selected, 'deviceProfiles') }}</li>
+        <li>Asset profiles: {{ countOf(selected, 'assetProfiles') }}</li>
+        <li>Rule chains: {{ countOf(selected, 'ruleChains') }}</li>
+        <li>Dashboards: {{ countOf(selected, 'dashboards') }}</li>
+        <li>Sample devices: {{ countOf(selected, 'devices') }}</li>
+      </ul>
+
+      <div *ngIf="installResult" style="background: #e7f5ec; border: 1px solid #1b873f; border-radius: 6px; padding: 12px; font-size: 13px;">
+        <strong>Installed successfully.</strong><br>
+        Created {{ installResult.deviceProfileIds.length }} device profiles,
+        {{ installResult.ruleChainIds.length }} rule chains,
+        {{ installResult.dashboardIds.length }} dashboards.
+      </div>
+
+      <div class="pe-buttons">
+        <button mat-stroked-button type="button" (click)="selected = null">Close</button>
+        <button mat-raised-button color="primary" (click)="install(selected)"
+                [disabled]="selected.id && installing[selected.id.id]">
+          <mat-icon>cloud_download</mat-icon> Install in this tenant
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
