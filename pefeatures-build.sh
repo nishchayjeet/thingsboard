@@ -8,9 +8,10 @@
 # Steps:
 #   1. mvn package the project (produces application/target/thingsboard.deb)
 #   2. mvn build the tb-node Docker image
-#   3. docker save | gzip the image into a tarball
-#   4. scp tarball + deploy/docker-compose.yml to the remote
-#   5. ssh remote: docker load, docker compose down, docker compose up -d
+#   3. docker build the tb-web-report sidecar (Node + puppeteer)
+#   4. docker save | gzip both images into tarballs
+#   5. scp tarballs + deploy/docker-compose.yml to the remote
+#   6. ssh remote: docker load each tarball, docker compose down/up -d
 #
 # Credentials are read from environment variables only — never hardcode them
 # in this file, in committed config, or in commit messages.
@@ -26,9 +27,11 @@
 #
 # Optional:
 #   SKIP_BUILD=1         reuse an existing image tagged TB_IMAGE_TAG (skip mvn)
+#   SKIP_WEB_REPORT=1    don't build or ship the tb-web-report sidecar
 #   SKIP_DEPLOY=1        build only — don't ship to the server
 #   SKIP_TESTS=1         pass -DskipTests to maven (default: 1)
 #   MAVEN_OPTS           passed through to maven
+#   TB_WEB_REPORT_TAG    web-report image tag (default: thingsboard/tb-web-report:pe-local)
 
 set -euo pipefail
 
@@ -36,12 +39,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TB_IMAGE_TAG="${TB_IMAGE_TAG:-thingsboard/tb-node:pe-local}"
+TB_WEB_REPORT_TAG="${TB_WEB_REPORT_TAG:-thingsboard/tb-web-report:pe-local}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
+SKIP_WEB_REPORT="${SKIP_WEB_REPORT:-0}"
 SKIP_DEPLOY="${SKIP_DEPLOY:-0}"
 SKIP_TESTS="${SKIP_TESTS:-1}"
 ARTIFACT_DIR="${SCRIPT_DIR}/build-artifacts"
 ARTIFACT_NAME="tb-node-pe.tar.gz"
 ARTIFACT_PATH="${ARTIFACT_DIR}/${ARTIFACT_NAME}"
+WEB_REPORT_ARTIFACT_NAME="tb-web-report-pe.tar.gz"
+WEB_REPORT_ARTIFACT_PATH="${ARTIFACT_DIR}/${WEB_REPORT_ARTIFACT_NAME}"
+WEB_REPORT_CTX="${SCRIPT_DIR}/tb-web-report"
 COMPOSE_FILE="${SCRIPT_DIR}/deploy/docker-compose.yml"
 
 # ---------------------------------------------------------------- logging
@@ -113,15 +121,37 @@ build() {
   docker tag thingsboard/tb-node:latest "${TB_IMAGE_TAG}"
 }
 
+build_web_report() {
+  if [ "${SKIP_WEB_REPORT}" = "1" ]; then
+    log "SKIP_WEB_REPORT=1 → skipping tb-web-report image build"
+    return
+  fi
+  [ -d "${WEB_REPORT_CTX}" ] || { warn "no tb-web-report/ directory found, skipping"; return; }
+  log "Building tb-web-report image (${TB_WEB_REPORT_TAG})"
+  # Force linux/amd64 even on Apple Silicon so the image runs on the x86_64 deploy host.
+  ( cd "${WEB_REPORT_CTX}" && \
+    DOCKER_DEFAULT_PLATFORM="${DOCKER_DEFAULT_PLATFORM:-linux/amd64}" \
+    docker build --platform "${DOCKER_DEFAULT_PLATFORM:-linux/amd64}" \
+      -t "${TB_WEB_REPORT_TAG}" . )
+}
+
 # ---------------------------------------------------------------- package
 
 package() {
-  log "Saving image to ${ARTIFACT_PATH}"
   mkdir -p "${ARTIFACT_DIR}"
+  log "Saving tb-node image to ${ARTIFACT_PATH}"
   docker save "${TB_IMAGE_TAG}" | gzip -9 > "${ARTIFACT_PATH}"
   local size
   size=$(du -h "${ARTIFACT_PATH}" | cut -f1)
   log "Artifact ready: ${ARTIFACT_PATH} (${size})"
+
+  if [ "${SKIP_WEB_REPORT}" != "1" ] && docker image inspect "${TB_WEB_REPORT_TAG}" >/dev/null 2>&1; then
+    log "Saving tb-web-report image to ${WEB_REPORT_ARTIFACT_PATH}"
+    docker save "${TB_WEB_REPORT_TAG}" | gzip -9 > "${WEB_REPORT_ARTIFACT_PATH}"
+    local wsize
+    wsize=$(du -h "${WEB_REPORT_ARTIFACT_PATH}" | cut -f1)
+    log "Artifact ready: ${WEB_REPORT_ARTIFACT_PATH} (${wsize})"
+  fi
 }
 
 # ---------------------------------------------------------------- deploy
@@ -135,13 +165,18 @@ deploy() {
   log "Ensuring remote directory exists: ${TB_DEPLOY_PATH}"
   ssh_remote "mkdir -p '${TB_DEPLOY_PATH}'"
 
-  log "Copying image archive to remote (${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/)"
+  log "Copying tb-node image archive to remote (${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/)"
   scp_remote "${ARTIFACT_PATH}" "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/${ARTIFACT_NAME}"
+
+  if [ -f "${WEB_REPORT_ARTIFACT_PATH}" ]; then
+    log "Copying tb-web-report image archive to remote"
+    scp_remote "${WEB_REPORT_ARTIFACT_PATH}" "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/${WEB_REPORT_ARTIFACT_NAME}"
+  fi
 
   log "Copying docker-compose.yml to remote"
   scp_remote "${COMPOSE_FILE}" "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/docker-compose.yml"
 
-  log "Remote: loading image, recycling stack"
+  log "Remote: loading image(s), recycling stack"
   # heredoc — runs as a single ssh session on the remote
   ssh_remote bash -se <<REMOTE
 set -euo pipefail
@@ -160,6 +195,11 @@ fi
 echo "  → docker load ${ARTIFACT_NAME}"
 gunzip -c "${ARTIFACT_NAME}" | docker load
 
+if [ -f "${WEB_REPORT_ARTIFACT_NAME}" ]; then
+  echo "  → docker load ${WEB_REPORT_ARTIFACT_NAME}"
+  gunzip -c "${WEB_REPORT_ARTIFACT_NAME}" | docker load
+fi
+
 echo "  → \${COMPOSE} down (existing stack, if any)"
 \${COMPOSE} down --remove-orphans || true
 
@@ -177,7 +217,9 @@ REMOTE
 
 main() {
   log "tb-image-tag = ${TB_IMAGE_TAG}"
+  log "tb-web-report-tag = ${TB_WEB_REPORT_TAG}"
   build
+  build_web_report
   package
   deploy
   log "Done."

@@ -44,14 +44,38 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       # PE-feature toggles / config:
       SCHEDULER_POLL_DELAY_MS: "10000"
+      # Out-of-process renderer (PE-equivalent tb-web-report microservice).
+      # When set, the in-process chromium fork in ReportGenerator is bypassed.
+      REPORTS_SERVER_ENDPOINT_URL: "http://tb-web-report:8383"
+      # Base URL the renderer uses to navigate back to dashboards (PE: DEFAULT_TB_URL).
+      REPORT_BASE_URL: "http://thingsboard-ce:8080"
+      # Fallback chromium binary (only used if REPORTS_SERVER_ENDPOINT_URL is unset).
       REPORT_CHROME_BINARY: "chromium"
-      REPORT_BASE_URL: "http://localhost:8080"
       # First-run install. Set INSTALL_TB=true ONCE on a fresh database, then set back to false.
       INSTALL_TB: "false"
       LOAD_DEMO: "false"
     depends_on:
       postgres:
         condition: service_healthy
+
+  tb-web-report:
+    restart: always
+    image: "thingsboard/tb-web-report:pe-local"
+    container_name: tb-web-report
+    expose:
+      - "8383"
+    environment:
+      HTTP_BIND_ADDRESS: "0.0.0.0"
+      HTTP_BIND_PORT: "8383"
+      DEFAULT_PAGE_NAVIGATION_TIMEOUT: "120000"
+      DASHBOARD_IDLE_WAIT_TIME: "3000"
+      USE_NEW_PAGE_FOR_REPORT: "true"
+      LOGGER_LEVEL: "info"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
 volumes:
   postgres-data:

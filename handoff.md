@@ -142,6 +142,46 @@ next agent.
   app.component.ts, logo.component.ts, admin{,-routing}.module.ts.
 - ~50 new files in the PE feature folders.
 
+## Added after the route restructure: tb-web-report sidecar
+
+Reverse-engineered the PE `docker-compose.yml` (image
+`thingsboard/tb-pe-web-report:4.3.1.1PE`) and shipped an Apache-2.0
+equivalent.
+
+- **New service**: `tb-web-report/` at repo root — Node 22 +
+  `puppeteer-core` + system Chromium, HTTP API on `:8383`. Endpoint
+  `POST /api/generateReport` takes `{ url, jwt, format, viewport,
+  navigationTimeoutMs, idleWaitMs }` and returns the rendered binary.
+  `Dockerfile` baselines on `node:22-bookworm-slim` + apt chromium +
+  fonts + dumb-init.
+- **Java client**: `application/.../service/report/WebReportClient.java`
+  posts via `java.net.http.HttpClient`, streams the response to a temp
+  file, surfaces non-2xx as IOException. Enabled by env
+  `REPORTS_SERVER_ENDPOINT_URL` (Spring property
+  `reports.server.endpoint-url`).
+- **ReportGenerator** delegates to `WebReportClient` when configured;
+  in-process `ProcessBuilder` chromium fork retained as fallback.
+- **ReportRunner.issueRenderToken**: looks up the tenant's first
+  TENANT_ADMIN via `UserService.findTenantAdmins(...)`, builds a
+  `SecurityUser`, and mints an access JWT via `JwtTokenFactory`. The
+  microservice injects the token via
+  `page.evaluateOnNewDocument(t => localStorage.setItem('jwt_token', t))`
+  before navigating to the dashboard.
+- **Compose**: added `tb-web-report` service + `REPORTS_SERVER_ENDPOINT_URL`
+  / `REPORT_BASE_URL` env wired into tb-node. `REPORT_BASE_URL` now
+  points at `http://thingsboard-ce:8080` (docker-compose service name)
+  so the URL the renderer dereferences resolves inside the network.
+- **Build script**: `build_web_report()` builds the sidecar image with
+  `--platform linux/amd64`; `package` saves a second tarball
+  `tb-web-report-pe.tar.gz`; `deploy` scps it and runs `docker load` on
+  the remote. New env knobs: `SKIP_WEB_REPORT=1`, `TB_WEB_REPORT_TAG`.
+- **Docs**: `instructions.md` §2d and the per-feature Reports note
+  updated; new troubleshooting entries for blank login renders.
+  `progress.md` Reports row bumped from 🔶 to 🟡 with the new details.
+- **Compile check**: `mvn -pl application -am compile` clean.
+- **Not yet redeployed** — code/compose/docs only. Next deploy run
+  needs to build and ship the new sidecar image.
+
 ## Next steps
 
 In rough priority order:

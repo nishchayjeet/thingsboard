@@ -249,13 +249,13 @@ These steps are *not* automated — apply them once per deployment.
    client certificates via the device-profile transport configuration.
 6. **Configure SMTP.** Settings → Outgoing mail → set your real SMTP host;
    without it, password reset and report email won't work.
-7. **Install chromium in the tb-node container** if you use Reports:
-   ```bash
-   ssh container@192.168.69.16 \
-     "docker exec -u root tb-node apt-get update && \
-      docker exec -u root tb-node apt-get install -y chromium fonts-liberation"
-   ```
-   (Persist this by adding to `msa/tb-node/docker/Dockerfile` and rebuilding.)
+7. **Report rendering** — handled by the `tb-web-report` sidecar
+   container (Node + puppeteer + Chromium), built and shipped by
+   `pefeatures-build.sh` alongside tb-node. The compose file wires tb-node
+   to it via `REPORTS_SERVER_ENDPOINT_URL=http://tb-web-report:8383`; no
+   manual chromium install is required. (Set `SKIP_WEB_REPORT=1` to skip
+   building the sidecar; unset `REPORTS_SERVER_ENDPOINT_URL` in the
+   compose env to force the in-process Java chromium fork fallback.)
 8. **Set up backups.** Daily `pg_dump thingsboard` of the Postgres volume
    (`tb-postgres-data`), retained 30 days, plus logical export of dashboards
    and rule chains via the platform UI.
@@ -375,7 +375,13 @@ Follow the pattern used in
 - "Run now" generates the report synchronously. For scheduled runs, also
   create a Scheduler event of type `GENERATE_REPORT` with
   `{"reportId": "<report-uuid>"}` in its configuration JSON.
-- Requires **chromium** installed in the tb-node container (see §2d).
+- **Renderer:** by default tb-node delegates to the `tb-web-report`
+  sidecar (PE-equivalent Node + puppeteer microservice on port 8383).
+  Auth handoff: tb-node mints a tenant-admin access JWT via
+  `JwtTokenFactory`, hands it to the microservice, and the headless
+  browser stuffs it into `localStorage` before navigating to the
+  dashboard route. Falls back to an in-process chromium fork if
+  `REPORTS_SERVER_ENDPOINT_URL` is unset.
 - Requires **SMTP** configured at Settings → Outgoing mail.
 
 ### Roles (Advanced RBAC)
@@ -459,7 +465,22 @@ The LTS upgrade migration didn't run. Either:
   ```
 
 ### Reports endpoint returns "Headless render failed: command not found"
-Install chromium in the tb-node container — see §2d step 7.
+Falling back to in-process chromium because `REPORTS_SERVER_ENDPOINT_URL`
+is unset or the tb-web-report sidecar isn't reachable. Either:
+- Confirm the sidecar is up: `ssh ... 'docker compose ps tb-web-report'`,
+  and that tb-node's env has `REPORTS_SERVER_ENDPOINT_URL=http://tb-web-report:8383`.
+- Or install chromium in tb-node to make the fallback work:
+  `docker exec -u root tb-node apt-get update && apt-get install -y chromium`.
+
+### tb-web-report renders a blank login page instead of the dashboard
+The render JWT failed to take effect. Check:
+- `docker logs tb-web-report` for navigation errors.
+- The tenant has at least one TENANT_ADMIN user (ReportRunner mints the
+  token as the tenant's first admin; without one it falls back to an
+  unauthenticated page load).
+- The `REPORT_BASE_URL` resolves from inside the tb-web-report container
+  to the same host that issued the JWT — must be the docker-compose
+  service name `thingsboard-ce`, not `localhost`.
 
 ### MQTT integration shows `enabled` but no messages flow
 - Check `docker logs tb-node` for `MQTT integration <name> connected to …`.
@@ -495,8 +516,9 @@ Defined in `deploy/.env.example`. Pull the full list from there.
 | `SPRING_DATASOURCE_PASSWORD`   | dev-run + container env       | `postgres`                                         |
 | `TB_SERVICE_ID`                | container env                 | `tb-ce-node`                                       |
 | `SCHEDULER_POLL_DELAY_MS`      | container env                 | `10000`                                            |
-| `REPORT_CHROME_BINARY`         | container env                 | `chromium`                                         |
-| `REPORT_BASE_URL`              | container env                 | `http://localhost:8080`                            |
+| `REPORTS_SERVER_ENDPOINT_URL`  | container env                 | `http://tb-web-report:8383` (unset → use local chromium fork) |
+| `REPORT_CHROME_BINARY`         | container env (fallback only) | `chromium`                                         |
+| `REPORT_BASE_URL`              | container env                 | `http://thingsboard-ce:8080`                       |
 | `INSTALL_TB`                   | container env                 | `false` (set `true` on first run only)             |
 | `LOAD_DEMO`                    | container env                 | `false`                                            |
 

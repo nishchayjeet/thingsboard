@@ -67,19 +67,28 @@ but adapter not implemented yet.
 - ⚠️ **Multi-node**: poller is single-node-safe. For HA, add `SELECT … FOR UPDATE SKIP LOCKED`
   in `ScheduledEventServiceImpl.findDueEvents`.
 
-### Reports — 🔶
+### Reports — 🟡
 **Compared against:** <https://thingsboard.io/docs/pe/user-guide/reports/>
 - ✅ `report_config` table.
-- ✅ `ReportGenerator` forks headless Chromium → PDF/PNG.
-- ✅ `ReportRunner` snapshots, emails with attachment via `JavaMailSender`.
-- ✅ Auto-triggered from `SchedulerPoller` when a scheduled event has `type=REPORT` and `configuration.reportId`.
+- ✅ **`tb-web-report` sidecar** (Node + puppeteer + Chromium) at
+  `tb-web-report/`, PE-equivalent `REPORTS_SERVER_ENDPOINT_URL` contract
+  on port 8383. Built and shipped by `pefeatures-build.sh` alongside
+  tb-node. `WebReportClient` (Java) is the in-process HTTP client.
+- ✅ **Authenticated dashboard render**: `ReportRunner` mints a
+  tenant-admin access JWT via `JwtTokenFactory`; the microservice
+  injects it into `localStorage` via `evaluateOnNewDocument` before
+  navigating, so private dashboards render correctly.
+- ✅ `ReportGenerator` keeps the in-process `ProcessBuilder` chromium
+  fork as a fallback when `REPORTS_SERVER_ENDPOINT_URL` is unset.
+- ✅ `ReportRunner` snapshots, emails attachment via `JavaMailSender`.
+- ✅ Auto-triggered from `SchedulerPoller` (event `type=REPORT`,
+  `configuration.reportId`).
 - ✅ Manual run endpoint: `POST /api/report/config/{id}/runNow`.
-- ⛔ Authenticated dashboard URL — currently `buildDashboardUrl` produces an unauth URL. Needs a
-  service-account JWT or signed short-lived token before headless Chrome can render private dashboards.
-- ⛔ Angular UI page.
+- ✅ Angular UI page at `/reporting/templates`.
 - ⛔ Tests.
-- ⚠️ **Server prerequisite**: deploy host needs `chromium` installed; default binary
-  configurable via `report.chrome.binary`.
+- ⚠️ Render-JWT TTL is the regular access-token TTL (~2.5h default), not
+  a short-lived report-scoped token. Acceptable for v1; tighten when
+  introducing a dedicated `Authority.REPORT_RENDER` scope.
 
 ### Advanced RBAC — 🔶
 **Compared against:** <https://thingsboard.io/docs/pe/user-guide/role-based-access-control/>
