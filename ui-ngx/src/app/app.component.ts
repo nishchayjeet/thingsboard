@@ -33,6 +33,7 @@ import { svgIcons, svgIconsUrl } from '@shared/models/icon.models';
 import { ActionSettingsChangeLanguage } from '@core/settings/settings.actions';
 import { SETTINGS_KEY } from '@core/settings/settings.effects';
 import { initCustomJQueryEvents } from '@shared/models/jquery-event.models';
+import { WhiteLabelingService } from '@core/http/white-labeling.service';
 
 @Component({
     selector: 'tb-root',
@@ -47,9 +48,13 @@ export class AppComponent {
               private translate: TranslateService,
               private matIconRegistry: MatIconRegistry,
               private domSanitizer: DomSanitizer,
-              private authService: AuthService) {
+              private authService: AuthService,
+              private whiteLabelingService: WhiteLabelingService) {
 
     console.log(`ThingsBoard Version: ${env.tbVersion}`);
+
+    // Pull white-label params before user is known so login page is branded.
+    this.whiteLabelingService.loadLoginWhiteLabel().subscribe();
 
     this.matIconRegistry.addSvgIconResolver((name, namespace) => {
       if (namespace === 'mdi') {
