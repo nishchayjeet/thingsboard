@@ -1,0 +1,130 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="pe-page">
+  <div class="pe-page-header">
+    <div class="pe-page-title">Integration center · Integrations <span class="pe-count">{{ totalIntegrations }}</span></div>
+    <button mat-raised-button color="primary" (click)="newIntegration()">
+      <mat-icon>add</mat-icon> Add integration
+    </button>
+  </div>
+
+  <div class="pe-page-body">
+    <div class="pe-list">
+      <div class="pe-list-row pe-list-row--head">
+        <div class="col col-name">Name</div>
+        <div class="col col-type">Type</div>
+        <div class="col col-schedule">Routing key</div>
+        <div class="col col-next">Debug</div>
+        <div class="col col-status">Status</div>
+        <div class="col col-actions"></div>
+      </div>
+      <div class="pe-empty" *ngIf="integrations.length === 0">No integrations yet.</div>
+      <div class="pe-list-row pe-list-row--clickable"
+           *ngFor="let i of integrations"
+           [class.selected]="selected?.id?.id === i.id?.id"
+           (click)="select(i)">
+        <div class="col col-name">{{ i.name }}</div>
+        <div class="col col-type">{{ typeLabel(i.type) }}</div>
+        <div class="col col-schedule" style="font-family: monospace; font-size: 11px;">{{ i.routingKey }}</div>
+        <div class="col col-next">
+          <span class="pe-pill" [class.pe-pill--on]="i.debugMode" [class.pe-pill--off]="!i.debugMode">
+            {{ i.debugMode ? 'on' : 'off' }}
+          </span>
+        </div>
+        <div class="col col-status">
+          <mat-slide-toggle [checked]="i.enabled" (click)="toggle(i, $event)"></mat-slide-toggle>
+        </div>
+        <div class="col col-actions">
+          <button mat-icon-button color="warn" (click)="remove(i, $event)"><mat-icon>delete</mat-icon></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pe-editor" *ngIf="form.dirty || selected">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="pe-editor-title">{{ selected ? 'Edit integration' : 'New integration' }}</div>
+
+        <!-- Step 1: Basic settings -->
+        <div class="pe-section-label">1. Basic settings</div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Integration type</mat-label>
+          <mat-select formControlName="type" (selectionChange)="onTypeChange($event.value)">
+            <mat-optgroup *ngFor="let g of TYPE_GROUPS" [label]="g">
+              <mat-option *ngFor="let t of groupedTypes(g)" [value]="t.value">{{ t.label }}</mat-option>
+            </mat-optgroup>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Integration name</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Routing key (auto-generated if blank)</mat-label>
+          <input matInput formControlName="routingKey">
+        </mat-form-field>
+
+        <div class="pe-grid-2">
+          <mat-checkbox formControlName="enabled">Enable integration</mat-checkbox>
+          <mat-checkbox formControlName="allowCreateDevicesOrAssets">Allow create devices or assets</mat-checkbox>
+          <mat-checkbox formControlName="debugMode">Debug mode</mat-checkbox>
+        </div>
+
+        <!-- Step 2: Uplink converter -->
+        <div class="pe-section-label">2. Uplink data converter</div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Uplink converter (decoder for incoming messages)</mat-label>
+          <mat-select formControlName="defaultConverterId">
+            <mat-option [value]="''">— None (pass-through) —</mat-option>
+            <mat-option *ngFor="let c of uplinkConverters()" [value]="c.id?.id">{{ c.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Step 3: Downlink converter -->
+        <div class="pe-section-label">3. Downlink data converter (optional)</div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Downlink converter (encoder for outbound messages)</mat-label>
+          <mat-select formControlName="downlinkConverterId">
+            <mat-option [value]="''">— None —</mat-option>
+            <mat-option *ngFor="let c of downlinkConverters()" [value]="c.id?.id">{{ c.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Step 4: Connection settings -->
+        <div class="pe-section-label">4. Connection settings</div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Configuration (JSON, type-specific)</mat-label>
+          <textarea matInput formControlName="configuration" rows="10"
+                    style="font-family: monospace; font-size: 12px;"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Shared secret (HTTP integrations: required header)</mat-label>
+          <input matInput formControlName="secret">
+          <mat-hint>Senders must include <code>X-Integration-Secret: &lt;value&gt;</code></mat-hint>
+        </mat-form-field>
+
+        <div class="pe-buttons">
+          <button mat-stroked-button type="button" (click)="selected = null; form.reset()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

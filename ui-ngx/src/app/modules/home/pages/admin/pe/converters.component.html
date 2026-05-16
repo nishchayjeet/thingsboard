@@ -1,0 +1,107 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="pe-page">
+  <div class="pe-page-header">
+    <div class="pe-page-title">Integration center · Data converters <span class="pe-count">{{ total }}</span></div>
+    <button mat-raised-button color="primary" (click)="newConverter()">
+      <mat-icon>add</mat-icon> Add converter
+    </button>
+  </div>
+
+  <div class="pe-page-body">
+    <div class="pe-list">
+      <div class="pe-list-row pe-list-row--head">
+        <div class="col col-name">Name</div>
+        <div class="col col-type">Type</div>
+        <div class="col col-schedule">Language</div>
+        <div class="col col-next">Debug</div>
+        <div class="col col-status"></div>
+        <div class="col col-actions"></div>
+      </div>
+      <div class="pe-empty" *ngIf="converters.length === 0">No converters yet.</div>
+      <div class="pe-list-row pe-list-row--clickable"
+           *ngFor="let c of converters"
+           [class.selected]="selected?.id?.id === c.id?.id"
+           (click)="select(c)">
+        <div class="col col-name">{{ c.name }}</div>
+        <div class="col col-type">{{ c.type }}</div>
+        <div class="col col-schedule">{{ c.configuration?.scriptLang || 'JS' }}</div>
+        <div class="col col-next">{{ c.debugMode ? 'on' : 'off' }}</div>
+        <div class="col col-status"></div>
+        <div class="col col-actions">
+          <button mat-icon-button color="warn" (click)="remove(c, $event)"><mat-icon>delete</mat-icon></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pe-editor" *ngIf="form.dirty || selected">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="pe-editor-title">{{ selected ? 'Edit converter' : 'New converter' }}</div>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+
+        <div class="pe-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Type</mat-label>
+            <mat-select formControlName="type" (selectionChange)="onTypeChange($event.value)">
+              <mat-option value="UPLINK">Uplink (decoder)</mat-option>
+              <mat-option value="DOWNLINK">Downlink (encoder)</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Language</mat-label>
+            <mat-select formControlName="scriptLang">
+              <mat-option value="JS">JavaScript</mat-option>
+              <mat-option value="TBEL">TBEL</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="pe-section-label">Function</div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <textarea matInput formControlName="decoder" rows="14"
+                    style="font-family: monospace; font-size: 12px;"></textarea>
+        </mat-form-field>
+
+        <mat-checkbox formControlName="debugMode">Debug mode (logs every conversion)</mat-checkbox>
+
+        <div class="pe-section-label">Test</div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Test input (JSON string)</mat-label>
+          <textarea matInput formControlName="testInput" rows="3"
+                    style="font-family: monospace; font-size: 12px;"></textarea>
+        </mat-form-field>
+        <button mat-stroked-button type="button" (click)="testScript()">▶ Test in browser</button>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width" *ngIf="form.value.testOutput">
+          <mat-label>Output</mat-label>
+          <textarea matInput formControlName="testOutput" rows="4" readonly
+                    style="font-family: monospace; font-size: 12px;"></textarea>
+        </mat-form-field>
+
+        <div class="pe-buttons">
+          <button mat-stroked-button type="button" (click)="selected = null; form.reset()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
