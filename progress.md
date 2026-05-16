@@ -11,17 +11,30 @@ Legend:
 
 ## Feature matrix
 
-| Area                  | Backend | REST API | Runtime | Angular UI | Sidebar | Tests | Status |
-|-----------------------|:-------:|:--------:|:-------:|:----------:|:-------:|:-----:|:------:|
-| White-labeling        |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Scheduler             |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Reports               |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Advanced RBAC         |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Platform Integrations |   ✅    |   ✅    |  🟡(*)  |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Data converters       |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Device codec library  |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| Solution Templates    |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |  ⛔  | 🟡 |
-| SSO/SAML federation   |   ⛔    |   ⛔    |   ⛔    |     ⛔     |    ⛔   |  ⛔  | ⛔  |
+| Area                  | Backend | REST API | Runtime | Angular UI | Sidebar | PE-aligned route | Tests | Status |
+|-----------------------|:-------:|:--------:|:-------:|:----------:|:-------:|:----------------:|:-----:|:------:|
+| White-labeling        |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Scheduler             |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Reports               |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Advanced RBAC         |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Platform Integrations |   ✅    |   ✅    |  🟡(*)  |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Data converters       |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Device codec library  |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| Solution Templates    |   ✅    |   ✅    |   ✅    |     ✅     |    ✅   |       ✅         |  ⛔  | 🟡 |
+| SSO/SAML federation   |   ⛔    |   ⛔    |   ⛔    |     ⛔     |    ⛔   |       ⛔         |  ⛔  | ⛔  |
+
+### Deployed routes (live on 192.168.69.16:8000 as of 2026-05-15)
+
+| Feature              | Route                                    |
+|----------------------|------------------------------------------|
+| White-labeling       | `/white-labeling/whiteLabel`             |
+| Scheduler            | `/features/scheduler`                    |
+| Reports              | `/reporting/templates`                   |
+| Solution templates   | `/solutionTemplates`                     |
+| Integrations         | `/integrationsCenter/integrations`       |
+| Data converters      | `/integrationsCenter/converters`         |
+| Device library       | `/integrationsCenter/codec-library`      |
+| Roles                | `/security-settings/roles`               |
 
 (*) Integration runtime: MQTT-family (covers MQTT, AWS IoT, Azure IoT Hub,
 ChirpStack, TTN, Loriot via MQTT bridges) and HTTP webhook are working.

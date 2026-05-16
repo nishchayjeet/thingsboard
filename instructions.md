@@ -115,6 +115,63 @@ What it does, step by step (each step is logged with timestamps):
 On a clean build that takes ~ 5 minutes of Maven + ~ 2 minutes for the
 image. Subsequent rebuilds (Java-only changes) are ~ 90 seconds.
 
+### 2a.alt. Manual three-step deploy (build → scp → remote up)
+
+If you'd rather run the phases by hand — for debugging, partial rebuilds,
+or because `pefeatures-build.sh` failed mid-way — here are the explicit
+commands the script wraps. Run them from the repo root on your Mac:
+
+```bash
+# 0. Load env vars (host/user/path/key) into the current shell
+set -a; source .env; set +a
+
+# Cross-arch: build a linux/amd64 image even on Apple Silicon
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
+# 1. BUILD: maven artifact + docker image, then save to a tarball
+mvn clean install -DskipTests -Dlicense.skip=true
+mvn -f msa/tb-node/pom.xml verify -Ddockerfile.skip=false \
+    -Dmain.dir="$(pwd)" -DskipTests -Dlicense.skip=true
+docker tag thingsboard/tb-node:latest thingsboard/tb-node:pe-local
+mkdir -p build-artifacts
+docker save thingsboard/tb-node:pe-local | gzip > build-artifacts/tb-node-pe.tar.gz
+
+# 2. SCP: ship the image + compose file to the remote (key-based SSH)
+ssh -i "${TB_DEPLOY_KEY}" "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}" \
+    "mkdir -p ${TB_DEPLOY_PATH}"
+scp -i "${TB_DEPLOY_KEY}" \
+    build-artifacts/tb-node-pe.tar.gz \
+    deploy/docker-compose.yml \
+    "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/"
+
+# 3. REMOTE UP: load the image and recycle the stack
+ssh -i "${TB_DEPLOY_KEY}" "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}" bash <<'REMOTE'
+  set -e
+  cd "${TB_DEPLOY_PATH:-/home/container/thingsboard}"
+  gunzip -c tb-node-pe.tar.gz | docker load
+  docker compose down            # safe even if nothing was running
+  docker compose up -d
+  docker compose ps
+REMOTE
+
+# 4. (Optional) Reclaim disk on the Mac after a successful deploy
+rm -f build-artifacts/tb-node-pe.tar.gz
+docker image rm \
+  thingsboard/tb-node:pe-local \
+  thingsboard/tb-node:latest \
+  thingsboard/tb-node:4.4.0-SNAPSHOT 2>/dev/null || true
+```
+
+If you're using password auth instead of a key, swap `ssh -i "${TB_DEPLOY_KEY}" …`
+and `scp -i "${TB_DEPLOY_KEY}" …` for `sshpass -e ssh …` and `sshpass -e scp …`,
+with `SSHPASS="${TB_DEPLOY_PASSWORD}"` exported in the shell.
+
+**First-time deploy only:** flip `INSTALL_TB: "true"` in
+`deploy/docker-compose.yml` before step 3 so the platform creates the DB
+schema, then flip it back to `"false"` and `docker compose up -d` again.
+Leaving it `"true"` causes `start-tb-node.sh` to re-run the installer on
+every restart and the container crash-loops on the duplicate sysadmin row.
+
 ### 2b. Smoke test
 
 Open the UI in your browser. On the deploy server use the LAN URL; from the

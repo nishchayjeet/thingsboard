@@ -36,6 +36,7 @@ pom.xml.versionsBackup
 .env.local
 build-artifacts/
 .vscode/
+.playwright-mcp/
 handoff*.local.md
 .instance_id
 rebuild-docker.sh

@@ -1,215 +1,214 @@
-# Session handoff — PE-feature build kickoff
+# Session handoff — PE-feature UI live on remote
 
 ## Goal
 
-Stand up the PE-feature parity layer on top of CE in this internal fork: build
-white-labeling, scheduler, reports, advanced RBAC, platform integrations,
-device codec library, and solution templates as patches to the CE source
-(user explicitly accepted upgrade-merge pain). Then create a Mac→remote
-CI/CD pipeline so testing happens on `192.168.69.16` rather than on local
-Docker.
+Stand up the PE-feature parity layer (white-labeling, Scheduler, Reports,
+Advanced RBAC, Platform Integrations, Data Converters, Device Library,
+Solution Templates) on top of CE 4.4.0-SNAPSHOT in this internal fork, and
+run a Mac→remote CI/CD pipeline so testing happens on the QNAP server
+`192.168.69.16` rather than on local Docker.
+
+This session: rebuild + redeploy with route paths and sidebar tree
+restructured to mirror the PE conventions captured from
+`preview.edgekinect.com` (read-only PE reference). Tidy repo, document the
+manual build/scp/up sequence, free disk.
 
 ## Current state
 
-**Schema:** 11 new tables added (`role`, `entity_group_permission`,
-`user_role`, `scheduled_event`, `report_config`, `converter`, `integration`,
+**Deployed:** `thingsboard/tb-node:pe-local` is running on
+`192.168.69.16` (containers `tb-node` + `tb-postgres`, postgres healthy,
+tb-node started clean — no install loop). UI at
+<http://192.168.69.16:8000>. Default tenant login
+`tenant@thingsboard.org / tenant`.
+
+**Schema:** 11 PE tables (`role`, `entity_group_permission`, `user_role`,
+`scheduled_event`, `report_config`, `converter`, `integration`,
 `payload_codec_library`, `solution_template`, `solution_install_record`).
+Mirrored in `dao/src/main/resources/sql/schema-entities.sql` and
+`application/src/main/data/upgrade/lts/schema_update.sql`.
 
-**Frontend:** all 7 PE features now have working admin pages under
-`ui-ngx/src/app/modules/home/pages/admin/pe/` plus `white-labeling.component`
-(at the root of `admin/`). Each page follows PE conventions:
-list-on-left + inline-edit-on-right, sidebar menu entries wired into the
-TENANT_ADMIN tree in `core/services/menu.models.ts`.
+**Backend:** entity → JdbcTemplate service → REST controller → runtime
+hook (poller / lifecycle manager / runner) for all 8 features.
 
-**Deployment:** `pefeatures-build.sh` at repo root builds + ships +
-restarts the stack on the remote server using credentials from `.env`
-(gitignored). `instructions.md` covers production + dev workflows.
+**Frontend:** all 8 PE features have admin pages under
+`ui-ngx/src/app/modules/home/pages/admin/pe/` plus `white-labeling`
+component at the root of `admin/`. Routes restructured to match PE paths
+(no longer nested under `/settings/`):
 
-> _Original session note (kept for context):_
+| Feature              | Route                                    |
+|----------------------|------------------------------------------|
+| White-labeling       | `/white-labeling/whiteLabel`             |
+| Scheduler            | `/features/scheduler`                    |
+| Reports              | `/reporting/templates`                   |
+| Solution templates   | `/solutionTemplates`                     |
+| Integrations         | `/integrationsCenter/integrations`       |
+| Data converters      | `/integrationsCenter/converters`         |
+| Device library       | `/integrationsCenter/codec-library`      |
+| Roles                | `/security-settings/roles`               |
 
-**Schema:** 11 new tables added (`role`, `entity_group_permission`,
-`user_role`, `scheduled_event`, `report_config`, `converter`, `integration`,
-`payload_codec_library`, `solution_template`, `solution_install_record`).
-Mirrored in both `dao/src/main/resources/sql/schema-entities.sql` (fresh
-installs) and `application/src/main/data/upgrade/lts/schema_update.sql`
-(existing-install upgrades — idempotent).
+Menu tree (`core/services/menu.models.ts`) reordered to match PE: Reporting
+and Solution templates near top; Integration center as a grouped toggle;
+Roles slotted under Security settings; Scheduler under Advanced features;
+White-labeling as a top-level entry.
 
-**Backend per feature:** entity → JdbcTemplate-based service → REST
-controller → runtime hook (poller / lifecycle manager / runner). All 7
-features have working backends. See `progress.md` for per-feature
-detail.
+**CI/CD:** `pefeatures-build.sh` at repo root drives the full
+build→scp→remote-up pipeline. Credentials are env-var-only (`TB_DEPLOY_*`,
+loaded from gitignored `.env`). The build uses `DOCKER_DEFAULT_PLATFORM=
+linux/amd64` so the image runs on the x86_64 QNAP. `instructions.md` §2a
+documents the one-shot script; the new §2a.alt documents the manual
+build/scp/remote-up commands for partial reruns and debugging.
 
-**Frontend:** only **white-labeling** has a full admin page. The other six
-have working REST APIs only.
+**Compilation:** verified end-to-end in this session — `mvn clean install
+-DskipTests` succeeds; `msa/tb-node` Docker build succeeds; image loads
+and starts on the remote. UI bundle is included in the Docker image (the
+frontend-maven-plugin runs as part of the `ui-ngx` module).
 
-**CI/CD:** `pefeatures-build.sh` at repo root builds the project, builds
-the `thingsboard/tb-node:pe-local` image on this Mac, ships it to the
-remote test server via scp+docker load, and brings up the stack with the
-compose file at `deploy/docker-compose.yml`. Credentials are env-var-only
-(see `deploy/.env.example`).
-
-**Compilation:** not verified end-to-end this session — I read the codebase
-to align signatures but did not run `mvn compile`. The first thing the next
-agent should do is `mvn -pl common/data,common/dao-api,dao,application -am compile -DskipTests -Dlicense.skip=true` and surface anything broken.
-
-**Tests:** none written this session. Listed as next-step priority.
+**Tests:** none added this session. Still listed as the priority for the
+next agent.
 
 ## Changed (this session)
 
-### CE source modifications (8 files)
+### Frontend route + menu restructure
 
-- `dao/src/main/resources/sql/schema-entities.sql` — 11 new tables.
-- `application/src/main/data/upgrade/lts/schema_update.sql` — mirror migrations.
-- `common/data/.../EntityType.java` — added `ROLE`, `SCHEDULED_EVENT`,
-  `REPORT_CONFIG`, `INTEGRATION`, `CONVERTER`, `PAYLOAD_CODEC`,
-  `SOLUTION_TEMPLATE` (proto numbers 100–106).
-- `application/.../security/permission/DefaultAccessControlService.java` —
-  added `hasRoleGrant` fallback: when the authority-based check fails,
-  consult `RoleService` for custom-role grants before denying.
-- `application/.../config/ThingsboardSecurityConfiguration.java` — no
-  changes ultimately needed (HTTP integration webhook lives under
-  `/api/noauth/integrations/**`, covered by existing `/api/noauth/**` permit).
-- `ui-ngx/src/app/app.component.ts` — bootstrap `WhiteLabelingService.loadLoginWhiteLabel()`.
-- `ui-ngx/src/app/shared/components/logo.component.ts` — reactive logo
-  source from the WL service.
-- `ui-ngx/src/app/modules/home/pages/admin/admin{,-routing}.module.ts` —
-  registered + routed `WhiteLabelingComponent`.
-- `.gitignore` — added `.env`, `build-artifacts/`, `.vscode/`.
-
-### New files (~50)
-
-Grouped by feature:
-
-- **White-labeling** (8): `WhiteLabelingParams`, `LoginWhiteLabelingParams`,
-  `WhiteLabelingService` (api + impl), `WhiteLabelingController`,
-  `white-labeling.models.ts`, `white-labeling.service.ts`,
-  `white-labeling.component.{ts,html}`.
-- **Scheduler** (6): `ScheduledEventId`, `ScheduledEvent`, `ScheduleConfig`,
-  `ScheduledEventService` (api + impl), `ScheduleEvaluator`,
-  `ScheduledEventController`, `SchedulerPoller`, `scheduled-event.service.ts`.
-- **Reports** (5): `ReportConfigId`, `ReportConfig`, `ReportConfigService`
-  (api + impl), `ReportController`, `ReportGenerator`, `ReportRunner`.
-- **RBAC** (5): `RoleId`, `Role`, `RoleService` (api + impl), `RoleController`.
-- **Integrations** (10): `IntegrationId`, `ConverterId`, `Integration`,
-  `Converter`, `IntegrationType`, `IntegrationService` (api + impl),
-  `IntegrationContext`, `IntegrationAdapter`, `IntegrationManager`,
-  `MqttIntegrationAdapter`, `HttpIntegrationAdapter`, `ScriptConverter`,
-  `IntegrationController`, `IntegrationHttpController`.
-- **Codec library** (6): `PayloadCodecId`, `PayloadCodec`,
-  `PayloadCodecService` (api + impl), `PayloadCodecController`,
-  `PayloadCodecCatalogSeeder` (10 reference codecs).
-- **Solution templates** (5): `SolutionTemplateId`, `SolutionTemplate`,
-  `SolutionTemplateService` (api + impl), `SolutionInstaller`,
-  `SolutionTemplateController`.
+- `ui-ngx/src/app/modules/home/pages/admin/admin-routing.module.ts` —
+  removed PE routes from `/settings/` children; added top-level routes for
+  white-labeling, reports, solution templates, and the
+  `integrationsCenter` group. Slotted `roles` under existing
+  `security-settings` children.
+- `ui-ngx/src/app/modules/home/pages/features/features-routing.module.ts`
+  — added `/features/scheduler` route, imports
+  `SchedulerEventsComponent` from `@home/pages/admin/pe/`.
+- `ui-ngx/src/app/core/services/menu.models.ts` — updated all
+  `MenuId.pe_*` paths to PE-compatible URLs; reordered the TENANT_ADMIN
+  menu tree to match PE's sidebar.
 
 ### Operational
 
-- `pefeatures-build.sh` — Mac→remote build+deploy.
-- `deploy/docker-compose.yml` — server-side stack using
-  `thingsboard/tb-node:pe-local`, ports per the user's spec
-  (8000/7090/1883/8883/5683-5688, postgres on 55432).
-- `deploy/dev-run.sh` — Mac-local `mvn spring-boot:run` with remote Postgres.
-- `deploy/.env.example` — env-var template (no secrets).
-- `CLAUDE.md` — agent onboarding (commits, tests, security review, no AI
-  attribution).
-- `progress.md` — per-feature parity matrix.
-- This file (`handoff.md`).
+- Deploy succeeded with `INSTALL_TB="false"` after the earlier first-run
+  install ran the schema bootstrap. The named volume `tb-postgres-data`
+  preserves the DB across `docker compose down/up`.
+- `pefeatures-build.sh` deployment timing (this run): Maven ≈ 4 min,
+  Docker image ≈ 10 sec, save+gzip ≈ 15 sec, scp ≈ 1 min 49 sec, remote
+  load+up ≈ 1 min 25 sec — total ≈ 7 min 30 sec wall clock.
 
-## Failed attempts
+### Tidy (this session, after deploy)
 
-1. **GraalVM polyglot for inline converter execution.** I initially wrote
-   `ScriptConverter` to call GraalVM JS so integration adapters could
-   decode payloads before pushing to the rule engine. GraalVM is not a CE
-   dependency, so the import would not resolve. **Resolution:**
-   `ScriptConverter` is now a pass-through that annotates metadata with the
-   converter id/name; the actual script decoding happens downstream in
-   rule-engine script nodes that already use CE's clustered `JsInvokeService`.
-   This is faithful enough to PE behavior for v1 since PE's integration
-   converter is itself a script-engine job — we're just running the same
-   script one hop later.
+- Moved PE reference screenshots (`pe-01-home.png` … `pe-08-solutions.png`)
+  out of repo root into `.playwright-mcp/`.
+- Added `.playwright-mcp/` to `.gitignore`.
+- Added §2a.alt "Manual three-step deploy (build → scp → remote up)" to
+  `instructions.md` with explicit commands per phase (env-loading,
+  cross-arch build, scp, remote `docker load` + `docker compose up -d`,
+  optional Mac cleanup).
+- Reclaimed ~ 3.7 GB on the Mac: deleted `build-artifacts/tb-node-pe.tar.gz`
+  (882 MB) and removed local images `thingsboard/tb-node:{pe-local,latest,
+  4.4.0-SNAPSHOT}` (926 MB each; same layer hash so the actual reclaim is
+  one image's worth plus the tarball).
 
-2. **`/api/v1/integrations/...` URL prefix.** First version of
-   `IntegrationHttpController` mounted under `/api/v1/integrations/...`,
-   which collides with the device API entry point in
-   `ThingsboardSecurityConfiguration` (`DEVICE_API_ENTRY_POINT = "/api/v1/**"`).
-   That entry point has device-token auth; webhooks need either no auth or
-   the integration's shared secret. **Resolution:** moved the webhook to
-   `/api/noauth/integrations/http/{routingKey}` so it's covered by the
-   existing `NON_TOKEN_BASED_AUTH_ENTRY_POINTS` permit list. No security
-   config changes needed.
+## Failed attempts (this session)
 
-3. **PE-doc audit agent.** I spawned a background agent to fetch each
-   feature's PE doc page and diff my implementation against it. Both
-   `WebFetch` and `curl` are denied in this sandbox, so the agent returned
-   no findings. **Resolution:** I worked from PE behavior I know from the
-   user's spec and surfaced known gaps in `progress.md`. The audit is worth
-   redoing in a session where the agent has network — particularly to verify
-   field-name parity (e.g. `WhiteLabelingParams` field names, REST route
-   shapes).
+1. **Route paths still under `/settings/`.** First attempt left the PE
+   pages nested under `/settings/<feature>`. Login screen showed
+   "Settings → White labeling, …" only, with no top-level PE entries.
+   **Diagnosis:** PE uses top-level routes per the screenshots from
+   `preview.edgekinect.com`. **Fix:** moved routes to top level (table
+   above) and reordered the menu tree.
 
-4. **Per-tenant `findAdminSettingsByKey` quirk.** CE's
-   `AdminSettingsServiceImpl.findAdminSettingsByKey` ignores the `tenantId`
-   it's passed and queries `SYS_TENANT_ID` unconditionally. I used the
-   intended `findAdminSettingsByTenantIdAndKey(tenantId, key)` in
-   `WhiteLabelingServiceImpl` so tenant-scope WL actually works.
+2. **`docker compose stop tb-node` failed during a mid-deploy recovery.**
+   I used the *container name* (`tb-node`) instead of the *service name*
+   (`thingsboard-ce`). **Fix:** use `docker compose down` (no service
+   name) when recycling the whole stack.
+
+3. **INSTALL_TB=true left on for a normal redeploy** earlier caused a
+   crash loop on the duplicate sysadmin row (the installer ran again on a
+   non-empty DB, and `start-tb-node.sh` doesn't transition from installer
+   mode to server mode). **Fix:** flip `INSTALL_TB` back to `"false"`
+   after the first successful schema install; documented in §2a.alt of
+   `instructions.md`.
+
+## Earlier session entries (kept for context)
+
+- GraalVM polyglot was abandoned — `ScriptConverter` is now a pass-through
+  that annotates metadata; actual JS decoding happens downstream in
+  rule-engine script nodes via CE's `JsInvokeService`.
+- `IntegrationHttpController` is mounted under
+  `/api/noauth/integrations/http/{routingKey}` (not `/api/v1/...`, which
+  collides with the device API entry point).
+- `WhiteLabelingServiceImpl` uses `findAdminSettingsByTenantIdAndKey`, not
+  `findAdminSettingsByKey` (the latter silently ignores tenantId and
+  always queries SYS_TENANT_ID).
+- 8 files in CE source modified: schema-entities.sql, schema_update.sql,
+  EntityType.java, EntityIdFactory.java, DefaultAccessControlService.java,
+  app.component.ts, logo.component.ts, admin{,-routing}.module.ts.
+- ~50 new files in the PE feature folders.
 
 ## Next steps
 
 In rough priority order:
 
-1. **`mvn compile`** the four affected modules and fix anything broken.
-2. **Run the build script end-to-end against the remote.** Set
-   `TB_DEPLOY_KEY` (preferred — see CLAUDE.md), copy `deploy/.env.example`
-   to `.env`, then `./pefeatures-build.sh`. First deploy needs
-   `INSTALL_TB=true` in `deploy/docker-compose.yml` once so the new tables
-   get created; revert to `false` after.
-3. **Smoke-test each feature's REST API** with `curl` after the stack is
-   up: white-label save/read at noauth + tenant scope; create a scheduled
-   event; create a role; etc. (Test plan goes in next session's handoff.)
-4. **Build admin UI pages** for scheduler, RBAC, integrations, codecs,
-   reports, solution templates. Copy the
-   `white-labeling.component.ts` / `.html` pattern; register in
-   `admin.module.ts` and `admin-routing.module.ts`.
-5. **Tests.** Start with `ScheduleEvaluator` (pure logic, easiest) and
-   `RoleService.findGrantedOperations`. Then controller WebMvc tests.
-6. **`/security-review`** the new controllers in a dedicated session.
-   Pre-flagged sharp edges:
-   - `JdbcTemplate` SQL injection — all queries currently use `?` binding;
-     audit for any future change.
-   - `IntegrationHttpController` is unauthenticated by JWT — shared-secret
-     check should be mandatory in prod (currently optional if `secret` is
-     null on the integration).
-   - `ReportGenerator` shell-forks Chrome with a URL; if that URL ever
-     comes from user input rather than a server-stored config, add SSRF
-     defenses.
-   - `RoleServiceImpl.findGrantedOperations` does a `jsonb_array_elements_text`
-     query that's safe today but worth a separate review when entity-group
-     filtering lands.
-7. **`EntityGroup`** entity + group-scoped permission enforcement to round
-   out the RBAC story. Today `entity_group_permission` is a table but no
-   `EntityGroup` first-class entity exists.
-8. **Native Kafka / OPC-UA / UDP / TCP integration adapters.** Types are
-   in the enum; adapter classes need writing; `IntegrationManager.createAdapter`
-   needs a branch per new type.
-9. **Authenticated dashboard URL for `ReportRunner.buildDashboardUrl`.**
-   Currently the headless Chrome instance hits the dashboard URL with no
-   auth; for non-public dashboards this needs a short-lived service-account
-   JWT carried as a fragment or a signed token query param.
+1. **Login + click through each PE menu entry.** Confirm pages render,
+   forms accept input, REST round-trips succeed. The restructured paths
+   are deployed but not yet smoke-tested in the browser.
+2. **Field-level UI alignment with PE.** The reference screenshots show
+   PE-specific columns and filters that our tables don't have yet:
+   - Integrations list: `Created time`, `Name`, `Integration type`,
+     `Daily activity`, `Status`, `Remote`, action column.
+   - Filters: `Name`, `Integration type`, `Uplink data converter`.
+   - Converters list: `Type`, `Created time`.
+   - Apply the same audit to Reports, Roles, Solution templates.
+3. **Tests.** Start with `ScheduleEvaluator` (pure logic, easiest) and
+   `RoleService.findGrantedOperations`. Then WebMvc tests for the new
+   controllers.
+4. **`/security-review`** the new controllers. Pre-flagged sharp edges:
+   - `IntegrationHttpController` is JWT-unauthenticated (shared secret
+     optional). Make secret check mandatory in prod.
+   - `ReportGenerator` shell-forks Chrome with a URL from
+     server-stored config; any future change that lets users control the
+     URL needs SSRF defenses.
+   - `RoleServiceImpl.findGrantedOperations` does
+     `jsonb_array_elements_text` — safe today but worth re-reviewing when
+     entity-group filtering lands.
+5. **`EntityGroup`** entity + group-scoped permission enforcement to
+   round out PE-RBAC parity.
+6. **Native Kafka / OPC-UA / UDP / TCP integration adapters.** Types are
+   in the enum; adapter classes need writing; branch in
+   `IntegrationManager.createAdapter`.
+7. **Authenticated dashboard URL for `ReportRunner.buildDashboardUrl`.**
+   Needs a short-lived service-account JWT for headless Chrome.
+8. **PE doc field-by-field audit** with WebFetch enabled — verify
+   `WhiteLabelingParams` field names and REST route shapes against PE.
 
-## Server prerequisites (for the next agent or human)
+## Server prerequisites (reference)
 
-When the build is shipped and `docker compose up` runs on the remote:
+When the stack is up on the remote:
 
-- Postgres on 55432 (external) / 5432 (internal). DB name `thingsboard`,
-  default password `postgres`. The schema is created automatically on
-  first run if `INSTALL_TB=true` is set in `deploy/docker-compose.yml`.
-- ThingsBoard UI on **http://192.168.69.16:8000** (default sysadmin:
-  `sysadmin@thingsboard.org` / `sysadmin`; default tenant:
-  `tenant@thingsboard.org` / `tenant`).
-- MQTT on 1883, MQTT/TLS on 8883, CoAP/LWM2M on 5683-5688 UDP, gRPC on
-  7090.
-- For the report generator to work on the server, `chromium` must be
-  installed in the container — the base `tb-node` image doesn't ship it.
-  Either:
-  (a) `docker exec -u root tb-node apt-get update && apt-get install -y chromium`, or
-  (b) rebuild the image with chromium baked in (`msa/tb-node/docker/Dockerfile`).
+- Postgres on 55432 (external) / 5432 (internal). DB `thingsboard`,
+  user/password `postgres`/`postgres` (replace in prod).
+- UI on <http://192.168.69.16:8000>. Default
+  `sysadmin@thingsboard.org/sysadmin`, `tenant@thingsboard.org/tenant`.
+- MQTT 1883, MQTT/TLS 8883, CoAP/LWM2M 5683–5688 UDP, gRPC 7090.
+- For Reports: `chromium` must be installed in the container (the base
+  `tb-node` image doesn't ship it). Either `docker exec -u root tb-node
+  apt-get install -y chromium`, or bake it into
+  `msa/tb-node/docker/Dockerfile`.
+
+## How to redeploy (cheat sheet)
+
+```bash
+# One-shot (recommended)
+./pefeatures-build.sh
+
+# Or manually — see instructions.md §2a.alt for the full sequence
+set -a; source .env; set +a
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+mvn clean install -DskipTests -Dlicense.skip=true
+mvn -f msa/tb-node/pom.xml verify -Ddockerfile.skip=false \
+    -Dmain.dir="$(pwd)" -DskipTests -Dlicense.skip=true
+docker tag thingsboard/tb-node:latest thingsboard/tb-node:pe-local
+docker save thingsboard/tb-node:pe-local | gzip > build-artifacts/tb-node-pe.tar.gz
+scp -i "${TB_DEPLOY_KEY}" build-artifacts/tb-node-pe.tar.gz \
+    deploy/docker-compose.yml "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}:${TB_DEPLOY_PATH}/"
+ssh -i "${TB_DEPLOY_KEY}" "${TB_DEPLOY_USER}@${TB_DEPLOY_HOST}" \
+    "cd ${TB_DEPLOY_PATH} && gunzip -c tb-node-pe.tar.gz | docker load && \
+     docker compose down && docker compose up -d"
+```
