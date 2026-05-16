@@ -1,0 +1,125 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="pe-page">
+  <div class="pe-page-header">
+    <div class="pe-page-title">Roles <span class="pe-count">{{ totalRoles }}</span></div>
+    <button mat-raised-button color="primary" (click)="newRole()">
+      <mat-icon>add</mat-icon> Add role
+    </button>
+  </div>
+
+  <div class="pe-page-body">
+    <div class="pe-list">
+      <div class="pe-list-row pe-list-row--head">
+        <div class="col col-name">Name</div>
+        <div class="col col-type">Type</div>
+        <div class="col col-schedule">Resources / ops</div>
+        <div class="col col-next"></div>
+        <div class="col col-status"></div>
+        <div class="col col-actions"></div>
+      </div>
+      <div class="pe-empty" *ngIf="roles.length === 0">No custom roles yet.</div>
+      <div class="pe-list-row pe-list-row--clickable"
+           *ngFor="let r of roles"
+           [class.selected]="selected?.id?.id === r.id?.id"
+           (click)="select(r)">
+        <div class="col col-name">{{ r.name }}</div>
+        <div class="col col-type">{{ r.type }}</div>
+        <div class="col col-schedule">
+          <ng-container *ngIf="r.type === 'GROUP'">
+            {{ (r.permissions?.operations || []).length }} ops
+          </ng-container>
+          <ng-container *ngIf="r.type === 'GENERIC'">
+            {{ (r.permissions | keyvalue).length }} resources
+          </ng-container>
+        </div>
+        <div class="col col-next"></div>
+        <div class="col col-status"></div>
+        <div class="col col-actions">
+          <button mat-icon-button color="warn" (click)="remove(r); $event.stopPropagation()">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pe-editor" *ngIf="form.dirty || selected">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="pe-editor-title">{{ selected ? 'Edit role' : 'New role' }}</div>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Role name</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Role type</mat-label>
+          <mat-select formControlName="type">
+            <mat-option value="GENERIC">Generic — applies platform-wide</mat-option>
+            <mat-option value="GROUP">Group — applies via entity-group grants</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- GENERIC: resource × operation matrix -->
+        <div class="pe-section-label" *ngIf="form.value.type === 'GENERIC'">Permissions (resource → operations)</div>
+        <div class="pe-perm-matrix" *ngIf="form.value.type === 'GENERIC'">
+          <div class="pe-resource" *ngFor="let r of RESOURCES">
+            <div class="pe-resource-head" (click)="toggleResourceAll(r)">
+              <span class="pe-resource-name">{{ r }}</span>
+              <span class="pe-resource-count">{{ resourceGrantedCount(r) }} / {{ OPERATIONS.length }}</span>
+            </div>
+            <div class="pe-op-grid">
+              <mat-checkbox *ngFor="let op of OPERATIONS" [(ngModel)]="matrix[r][op]"
+                            [ngModelOptions]="{standalone: true}">
+                {{ op }}
+              </mat-checkbox>
+            </div>
+          </div>
+        </div>
+
+        <!-- GROUP: flat ops -->
+        <div class="pe-section-label" *ngIf="form.value.type === 'GROUP'">Operations granted on entities in attached groups</div>
+        <div class="pe-op-grid" *ngIf="form.value.type === 'GROUP'">
+          <mat-checkbox *ngFor="let op of OPERATIONS" [(ngModel)]="groupOps[op]"
+                        [ngModelOptions]="{standalone: true}">
+            {{ op }}
+          </mat-checkbox>
+        </div>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Additional info</mat-label>
+          <input matInput formControlName="additionalInfo">
+        </mat-form-field>
+
+        <div class="pe-buttons">
+          <button mat-stroked-button type="button" (click)="selected = null; form.reset()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.pe-perm-matrix { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow: auto; }
+.pe-resource    { border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; padding: 8px 12px; }
+.pe-resource-head { display: flex; justify-content: space-between; cursor: pointer; font-weight: 600; font-size: 13px; padding-bottom: 4px; }
+.pe-resource-name { color: rgba(0,0,0,0.85); }
+.pe-resource-count { color: rgba(0,0,0,0.45); font-weight: 400; font-size: 11px; }
+.pe-op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 12px; padding-top: 4px; }
+</style>

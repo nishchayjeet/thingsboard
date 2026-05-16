@@ -16,17 +16,20 @@
 package org.thingsboard.server.service.security.permission;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.HasTenantId;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.security.Authority;
+import org.thingsboard.server.dao.role.RoleService;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -35,6 +38,9 @@ public class DefaultAccessControlService implements AccessControlService {
     private static final String YOU_DON_T_HAVE_PERMISSION_TO_PERFORM_THIS_OPERATION = "You don't have permission to perform this operation!";
 
     private final Map<Authority, Permissions> authorityPermissions = new HashMap<>();
+
+    @Autowired(required = false)
+    private RoleService roleService;
 
     public DefaultAccessControlService(SysAdminPermissions sysAdminPermissions,
                                        TenantAdminPermissions tenantAdminPermissions,
@@ -50,7 +56,9 @@ public class DefaultAccessControlService implements AccessControlService {
     public void checkPermission(SecurityUser user, Resource resource, Operation operation) throws ThingsboardException {
         PermissionChecker permissionChecker = getPermissionChecker(user.getAuthority(), resource);
         if (!permissionChecker.hasPermission(user, operation)) {
-            permissionDenied();
+            if (!hasRoleGrant(user, resource, operation, null)) {
+                permissionDenied();
+            }
         }
     }
 
@@ -58,7 +66,8 @@ public class DefaultAccessControlService implements AccessControlService {
     @SuppressWarnings("unchecked")
     public boolean hasPermission(SecurityUser user, Resource resource, Operation operation) throws ThingsboardException {
         var permissionChecker = getPermissionChecker(user.getAuthority(), resource);
-        return permissionChecker.hasPermission(user, operation);
+        if (permissionChecker.hasPermission(user, operation)) return true;
+        return hasRoleGrant(user, resource, operation, null);
     }
 
     @Override
@@ -67,7 +76,9 @@ public class DefaultAccessControlService implements AccessControlService {
                                                                             Operation operation, I entityId, T entity) throws ThingsboardException {
         PermissionChecker permissionChecker = getPermissionChecker(user.getAuthority(), resource);
         if (!permissionChecker.hasPermission(user, operation, entityId, entity)) {
-            permissionDenied();
+            if (!hasRoleGrant(user, resource, operation, entityId)) {
+                permissionDenied();
+            }
         }
     }
 
@@ -75,7 +86,23 @@ public class DefaultAccessControlService implements AccessControlService {
     @SuppressWarnings("unchecked")
     public <I extends EntityId, T extends HasTenantId> boolean hasPermission(SecurityUser user, Resource resource, Operation operation, I entityId, T entity) throws ThingsboardException {
         var permissionChecker = getPermissionChecker(user.getAuthority(), resource);
-        return permissionChecker.hasPermission(user, operation, entityId, entity);
+        if (permissionChecker.hasPermission(user, operation, entityId, entity)) return true;
+        return hasRoleGrant(user, resource, operation, entityId);
+    }
+
+    private boolean hasRoleGrant(SecurityUser user, Resource resource, Operation operation, EntityId entityId) {
+        if (roleService == null || user == null || user.getId() == null || user.getTenantId() == null) {
+            return false;
+        }
+        try {
+            Set<String> granted = roleService.findGrantedOperations(user.getTenantId(), user.getId(), resource.name(), entityId);
+            if (granted.isEmpty()) return false;
+            return granted.contains("ALL") || granted.contains(operation.name());
+        } catch (Exception e) {
+            log.warn("Role-based permission lookup failed for user {} resource {} op {}: {}",
+                    user.getId(), resource, operation, e.getMessage());
+            return false;
+        }
     }
 
     private PermissionChecker getPermissionChecker(Authority authority, Resource resource) throws ThingsboardException {
