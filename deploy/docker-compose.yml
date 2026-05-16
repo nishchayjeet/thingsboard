@@ -1,0 +1,59 @@
+# Deploy compose for the remote test server (192.168.69.16).
+# Mirrors the ports the user uses for development testing.
+# Image is built locally by `pefeatures-build.sh` and shipped via scp+docker load.
+
+services:
+  postgres:
+    restart: always
+    image: "postgres:18"
+    container_name: tb-postgres
+    ports:
+      - "55432:5432"
+    environment:
+      POSTGRES_DB: thingsboard
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d thingsboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  thingsboard-ce:
+    restart: always
+    # PE-feature-enabled image built by pefeatures-build.sh and `docker load`ed on this host.
+    image: "thingsboard/tb-node:pe-local"
+    container_name: tb-node
+    ports:
+      - "8000:8080"
+      - "7090:7070"
+      - "1883:1883"
+      - "8883:8883"
+      - "5683-5688:5683-5688/udp"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+    environment:
+      TB_SERVICE_ID: tb-ce-node
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      # PE-feature toggles / config:
+      SCHEDULER_POLL_DELAY_MS: "10000"
+      REPORT_CHROME_BINARY: "chromium"
+      REPORT_BASE_URL: "http://localhost:8080"
+      # First-run install. Set INSTALL_TB=true ONCE on a fresh database, then set back to false.
+      INSTALL_TB: "false"
+      LOAD_DEMO: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+    name: tb-postgres-data
+    driver: local

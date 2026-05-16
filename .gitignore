@@ -32,6 +32,11 @@ pom.xml.versionsBackup
 **/Californium.properties
 **/Californium3.properties
 **/.env
+.env
+.env.local
+build-artifacts/
+.vscode/
+handoff*.local.md
 .instance_id
 rebuild-docker.sh
 */.run/**
