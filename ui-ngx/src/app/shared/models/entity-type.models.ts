@@ -53,6 +53,14 @@ export enum EntityType {
   CALCULATED_FIELD = 'CALCULATED_FIELD',
   AI_MODEL = 'AI_MODEL',
   API_KEY = 'API_KEY',
+  // PE-feature parity additions:
+  ROLE = 'ROLE',
+  SCHEDULED_EVENT = 'SCHEDULED_EVENT',
+  REPORT_CONFIG = 'REPORT_CONFIG',
+  INTEGRATION = 'INTEGRATION',
+  CONVERTER = 'CONVERTER',
+  PAYLOAD_CODEC = 'PAYLOAD_CODEC',
+  SOLUTION_TEMPLATE = 'SOLUTION_TEMPLATE',
 }
 
 export enum AliasEntityType {
@@ -521,6 +529,98 @@ export const entityTypeTranslations = new Map<EntityType | AliasEntityType, Enti
         selectedEntities: 'api-key.selected-api-keys'
       }
     ],
+    // PE-feature parity additions:
+    [
+      EntityType.ROLE,
+      {
+        type: 'role.role',
+        typePlural: 'role.roles',
+        list: 'role.list-of-roles',
+        details: 'role.role-details',
+        add: 'role.add',
+        noEntities: 'role.no-roles',
+        search: 'role.search',
+        selectedEntities: 'role.selected-roles'
+      }
+    ],
+    [
+      EntityType.SCHEDULED_EVENT,
+      {
+        type: 'scheduler.scheduled-event',
+        typePlural: 'scheduler.scheduled-events',
+        list: 'scheduler.list-of-events',
+        details: 'scheduler.event-details',
+        add: 'scheduler.add',
+        noEntities: 'scheduler.no-events',
+        search: 'scheduler.search',
+        selectedEntities: 'scheduler.selected-events'
+      }
+    ],
+    [
+      EntityType.REPORT_CONFIG,
+      {
+        type: 'report.report',
+        typePlural: 'report.reports',
+        list: 'report.list-of-reports',
+        details: 'report.report-details',
+        add: 'report.add',
+        noEntities: 'report.no-reports',
+        search: 'report.search',
+        selectedEntities: 'report.selected-reports'
+      }
+    ],
+    [
+      EntityType.INTEGRATION,
+      {
+        type: 'integration.integration',
+        typePlural: 'integration.integrations',
+        list: 'integration.list-of-integrations',
+        details: 'integration.integration-details',
+        add: 'integration.add',
+        noEntities: 'integration.no-integrations',
+        search: 'integration.search',
+        selectedEntities: 'integration.selected-integrations'
+      }
+    ],
+    [
+      EntityType.CONVERTER,
+      {
+        type: 'converter.converter',
+        typePlural: 'converter.converters',
+        list: 'converter.list-of-converters',
+        details: 'converter.converter-details',
+        add: 'converter.add',
+        noEntities: 'converter.no-converters',
+        search: 'converter.search',
+        selectedEntities: 'converter.selected-converters'
+      }
+    ],
+    [
+      EntityType.PAYLOAD_CODEC,
+      {
+        type: 'codec.codec',
+        typePlural: 'codec.codecs',
+        list: 'codec.library',
+        details: 'codec.codec-details',
+        add: 'codec.add',
+        noEntities: 'codec.no-codecs',
+        search: 'codec.search',
+        selectedEntities: 'codec.selected-codecs'
+      }
+    ],
+    [
+      EntityType.SOLUTION_TEMPLATE,
+      {
+        type: 'solution.template',
+        typePlural: 'solution.templates',
+        list: 'solution.list-of-templates',
+        details: 'solution.template-details',
+        add: 'solution.add',
+        noEntities: 'solution.no-templates',
+        search: 'solution.search',
+        selectedEntities: 'solution.selected-templates'
+      }
+    ],
   ]
 );
 
@@ -671,6 +771,14 @@ export const entityTypeResources = new Map<EntityType, EntityTypeResource<BaseDa
         helpLinkId: 'apiKeys'
       }
     ],
+    // PE-feature parity additions:
+    [EntityType.ROLE, { helpLinkId: 'roles' }],
+    [EntityType.SCHEDULED_EVENT, { helpLinkId: 'scheduler' }],
+    [EntityType.REPORT_CONFIG, { helpLinkId: 'reports' }],
+    [EntityType.INTEGRATION, { helpLinkId: 'integrations' }],
+    [EntityType.CONVERTER, { helpLinkId: 'dataConverters' }],
+    [EntityType.PAYLOAD_CODEC, { helpLinkId: 'deviceLibrary' }],
+    [EntityType.SOLUTION_TEMPLATE, { helpLinkId: 'solutionTemplates' }],
   ]
 );
 

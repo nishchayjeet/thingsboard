@@ -20,7 +20,8 @@ import { NgModule } from '@angular/core';
 import { otaUpdatesRoutes } from '@home/pages/ota-update/ota-update-routing.module';
 import { vcRoutes } from '@home/pages/vc/vc-routing.module';
 import { MenuId } from '@core/services/menu.models';
-import { SchedulerEventsComponent } from '@home/pages/admin/pe/scheduler-events.component';
+import { EntitiesTableComponent } from '@home/components/entity/entities-table.component';
+import { ScheduledEventsTableConfigResolver } from '@home/pages/admin/pe/scheduled-events-table-config.resolver';
 
 const routes: Routes = [
   {
@@ -44,11 +45,14 @@ const routes: Routes = [
       ...vcRoutes,
       {
         path: 'scheduler',
-        component: SchedulerEventsComponent,
+        component: EntitiesTableComponent,
         data: {
           auth: [Authority.TENANT_ADMIN],
-          title: 'Scheduler',
+          title: 'scheduler.scheduled-events',
           breadcrumb: { menuId: MenuId.pe_scheduler }
+        },
+        resolve: {
+          entitiesTableConfig: ScheduledEventsTableConfigResolver
         }
       }
     ]
@@ -57,6 +61,9 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
+  providers: [
+    ScheduledEventsTableConfigResolver
+  ]
 })
 export class FeaturesRoutingModule { }

@@ -1,0 +1,71 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="mat-padding flex flex-col">
+  <form [formGroup]="entityForm">
+    <fieldset [disabled]="(isLoading$ | async) || !isEdit">
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>scheduler.name</mat-label>
+        <input matInput formControlName="name" required maxlength="255"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>scheduler.type</mat-label>
+        <mat-select formControlName="type" required>
+          <mat-option *ngFor="let t of EVENT_TYPES" [value]="t">{{ t }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-checkbox formControlName="enabled">Enabled</mat-checkbox>
+
+      <div formGroupName="schedule">
+        <mat-form-field class="mat-block" appearance="outline">
+          <mat-label translate>scheduler.repeat</mat-label>
+          <mat-select formControlName="repeat" required>
+            <mat-option *ngFor="let r of REPEAT_OPTIONS" [value]="r">{{ r }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="mat-block" appearance="outline">
+          <mat-label translate>scheduler.start-time</mat-label>
+          <input matInput formControlName="startTime" type="number" placeholder="epoch milliseconds"/>
+        </mat-form-field>
+
+        <mat-form-field class="mat-block" appearance="outline">
+          <mat-label translate>scheduler.timezone</mat-label>
+          <input matInput formControlName="timezone" placeholder="UTC"/>
+        </mat-form-field>
+
+        <mat-form-field class="mat-block" appearance="outline">
+          <mat-label>Repeat interval (ms) — for TIMER</mat-label>
+          <input matInput formControlName="repeatIntervalMs" type="number"/>
+        </mat-form-field>
+
+        <mat-form-field class="mat-block" appearance="outline">
+          <mat-label>Cron expression — for CRON</mat-label>
+          <input matInput formControlName="cron" placeholder="0 0 * * * *"/>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Configuration (JSON)</mat-label>
+        <textarea matInput formControlName="configuration" rows="8"
+                  style="font-family: monospace; font-size: 12px;"></textarea>
+      </mat-form-field>
+    </fieldset>
+  </form>
+</div>

@@ -39,13 +39,13 @@ import { NgxFlowModule } from '@flowjs/ngx-flow';
 import { TrendzSettingsComponent } from '@home/pages/admin/trendz-settings.component';
 import { ResourceLibraryTabsComponent } from '@home/pages/admin/resource/resource-library-tabs.component';
 import { WhiteLabelingComponent } from '@home/pages/admin/white-labeling.component';
-import { SchedulerEventsComponent } from '@home/pages/admin/pe/scheduler-events.component';
-import { RolesComponent } from '@home/pages/admin/pe/roles.component';
-import { IntegrationsComponent } from '@home/pages/admin/pe/integrations.component';
-import { ConvertersComponent } from '@home/pages/admin/pe/converters.component';
-import { CodecLibraryComponent } from '@home/pages/admin/pe/codec-library.component';
-import { SolutionTemplatesComponent } from '@home/pages/admin/pe/solution-templates.component';
-import { ReportsComponent } from '@home/pages/admin/pe/reports.component';
+import { RoleEntityComponent } from '@home/pages/admin/pe/role-entity.component';
+import { ScheduledEventEntityComponent } from '@home/pages/admin/pe/scheduled-event-entity.component';
+import { ReportEntityComponent } from '@home/pages/admin/pe/report-entity.component';
+import { IntegrationEntityComponent } from '@home/pages/admin/pe/integration-entity.component';
+import { ConverterEntityComponent } from '@home/pages/admin/pe/converter-entity.component';
+import { CodecEntityComponent } from '@home/pages/admin/pe/codec-entity.component';
+import { SolutionEntityComponent } from '@home/pages/admin/pe/solution-entity.component';
 
 @NgModule({
   declarations:
@@ -67,13 +67,13 @@ import { ReportsComponent } from '@home/pages/admin/pe/reports.component';
       TwoFactorAuthSettingsComponent,
       TrendzSettingsComponent,
       WhiteLabelingComponent,
-      SchedulerEventsComponent,
-      RolesComponent,
-      IntegrationsComponent,
-      ConvertersComponent,
-      CodecLibraryComponent,
-      SolutionTemplatesComponent,
-      ReportsComponent
+      RoleEntityComponent,
+      ScheduledEventEntityComponent,
+      ReportEntityComponent,
+      IntegrationEntityComponent,
+      ConverterEntityComponent,
+      CodecEntityComponent,
+      SolutionEntityComponent
     ],
   imports: [
     CommonModule,

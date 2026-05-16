@@ -1,0 +1,68 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="mat-padding flex flex-col">
+  <form [formGroup]="entityForm">
+    <fieldset [disabled]="(isLoading$ | async) || !isEdit">
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.name</mat-label>
+        <input matInput formControlName="name" required maxlength="255"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.type</mat-label>
+        <mat-select formControlName="type" required>
+          <mat-optgroup *ngFor="let g of TYPE_GROUPS" [label]="g">
+            <mat-option *ngFor="let t of groupedTypes(g)" [value]="t.value">{{ t.label }}</mat-option>
+          </mat-optgroup>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.routing-key</mat-label>
+        <input matInput formControlName="routingKey" placeholder="Auto-generated if blank"/>
+      </mat-form-field>
+
+      <div class="flex flex-col gap-2">
+        <mat-checkbox formControlName="enabled">{{ 'integration.enabled' | translate }}</mat-checkbox>
+        <mat-checkbox formControlName="debugMode">{{ 'integration.debug-mode' | translate }}</mat-checkbox>
+        <mat-checkbox formControlName="allowCreateDevicesOrAssets">{{ 'integration.allow-create-devices' | translate }}</mat-checkbox>
+      </div>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.uplink-converter</mat-label>
+        <input matInput formControlName="defaultConverterIdRaw" placeholder="Converter UUID"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.downlink-converter</mat-label>
+        <input matInput formControlName="downlinkConverterIdRaw" placeholder="Converter UUID"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.secret</mat-label>
+        <input matInput formControlName="secret" placeholder="X-Integration-Secret header value"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>integration.configuration</mat-label>
+        <textarea matInput formControlName="configuration" rows="10"
+                  style="font-family: monospace; font-size: 12px;"></textarea>
+      </mat-form-field>
+    </fieldset>
+  </form>
+</div>

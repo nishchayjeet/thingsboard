@@ -49,12 +49,12 @@ import { JsLibraryTableConfigResolver } from '@home/pages/admin/resource/js-libr
 import { TrendzSettingsComponent } from '@home/pages/admin/trendz-settings.component';
 import { aiModelRoutes } from '@home/pages/ai-model/ai-model-routing.module';
 import { WhiteLabelingComponent } from '@home/pages/admin/white-labeling.component';
-import { RolesComponent } from '@home/pages/admin/pe/roles.component';
-import { IntegrationsComponent } from '@home/pages/admin/pe/integrations.component';
-import { ConvertersComponent } from '@home/pages/admin/pe/converters.component';
-import { CodecLibraryComponent } from '@home/pages/admin/pe/codec-library.component';
-import { SolutionTemplatesComponent } from '@home/pages/admin/pe/solution-templates.component';
-import { ReportsComponent } from '@home/pages/admin/pe/reports.component';
+import { RolesTableConfigResolver } from '@home/pages/admin/pe/roles-table-config.resolver';
+import { IntegrationsTableConfigResolver } from '@home/pages/admin/pe/integrations-table-config.resolver';
+import { ConvertersTableConfigResolver } from '@home/pages/admin/pe/converters-table-config.resolver';
+import { CodecsTableConfigResolver } from '@home/pages/admin/pe/codecs-table-config.resolver';
+import { SolutionsTableConfigResolver } from '@home/pages/admin/pe/solutions-table-config.resolver';
+import { ReportsTableConfigResolver } from '@home/pages/admin/pe/reports-table-config.resolver';
 
 export const scadaSymbolResolver: ResolveFn<ScadaSymbolData> =
   (route: ActivatedRouteSnapshot,
@@ -446,11 +446,14 @@ const routes: Routes = [
       ...auditLogsRoutes,
       {
         path: 'roles',
-        component: RolesComponent,
+        component: EntitiesTableComponent,
         data: {
           auth: [Authority.TENANT_ADMIN],
-          title: 'Roles',
-          breadcrumb: { label: 'Roles', icon: 'admin_panel_settings' }
+          title: 'role.roles',
+          breadcrumb: { label: 'role.roles', icon: 'admin_panel_settings' }
+        },
+        resolve: {
+          entitiesTableConfig: RolesTableConfigResolver
         }
       }
     ]
@@ -486,22 +489,28 @@ const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'templates' },
       {
         path: 'templates',
-        component: ReportsComponent,
+        component: EntitiesTableComponent,
         data: {
           auth: [Authority.TENANT_ADMIN],
-          title: 'Report templates',
-          breadcrumb: { label: 'Report templates', icon: 'description' }
+          title: 'report.reports',
+          breadcrumb: { label: 'report.reports', icon: 'description' }
+        },
+        resolve: {
+          entitiesTableConfig: ReportsTableConfigResolver
         }
       }
     ]
   },
   {
     path: 'solutionTemplates',
-    component: SolutionTemplatesComponent,
+    component: EntitiesTableComponent,
     data: {
       auth: [Authority.TENANT_ADMIN],
-      title: 'Solution templates',
+      title: 'solution.templates',
       breadcrumb: { menuId: MenuId.pe_solution_templates }
+    },
+    resolve: {
+      entitiesTableConfig: SolutionsTableConfigResolver
     }
   },
   {
@@ -514,29 +523,38 @@ const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'integrations' },
       {
         path: 'integrations',
-        component: IntegrationsComponent,
+        component: EntitiesTableComponent,
         data: {
           auth: [Authority.TENANT_ADMIN],
-          title: 'Integrations',
+          title: 'integration.integrations',
           breadcrumb: { menuId: MenuId.pe_integrations }
+        },
+        resolve: {
+          entitiesTableConfig: IntegrationsTableConfigResolver
         }
       },
       {
         path: 'converters',
-        component: ConvertersComponent,
+        component: EntitiesTableComponent,
         data: {
           auth: [Authority.TENANT_ADMIN],
-          title: 'Data converters',
+          title: 'converter.converters',
           breadcrumb: { menuId: MenuId.pe_converters }
+        },
+        resolve: {
+          entitiesTableConfig: ConvertersTableConfigResolver
         }
       },
       {
         path: 'codec-library',
-        component: CodecLibraryComponent,
+        component: EntitiesTableComponent,
         data: {
           auth: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
-          title: 'Device library',
+          title: 'codec.library',
           breadcrumb: { menuId: MenuId.pe_codec_library }
+        },
+        resolve: {
+          entitiesTableConfig: CodecsTableConfigResolver
         }
       }
     ]
@@ -549,7 +567,13 @@ const routes: Routes = [
   providers: [
     ResourcesLibraryTableConfigResolver,
     JsLibraryTableConfigResolver,
-    QueuesTableConfigResolver
+    QueuesTableConfigResolver,
+    RolesTableConfigResolver,
+    IntegrationsTableConfigResolver,
+    ConvertersTableConfigResolver,
+    CodecsTableConfigResolver,
+    SolutionsTableConfigResolver,
+    ReportsTableConfigResolver
   ]
 })
 export class AdminRoutingModule { }

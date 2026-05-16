@@ -43,6 +43,18 @@ but adapter not implemented yet.
 
 ## Detailed status
 
+### Frontend table pattern
+
+All 7 PE admin pages now use CE's standard `EntitiesTableComponent` +
+`<Feature>TableConfigResolver` pattern (the same one Tenants, Devices,
+Queues, etc. use). Each is rendered with the shared table chrome:
+sortable headers, checkbox bulk-select, search box, refresh button,
+"Items per page" paginator, empty-state, and a right-side details panel
+driven by `<feature>-entity.component`. Forms cover the essential
+fields; complex sub-objects (permissions, schedule config, integration
+config, solution bundle) are JSON textareas in v1 — see "Known
+follow-ups" in `handoff.md` for production polish work.
+
 ### White-labeling — 🟡
 **Compared against:** <https://thingsboard.io/docs/pe/user-guide/white-labeling/>
 - ✅ `WhiteLabelingParams`, `LoginWhiteLabelingParams` (matches PE field names).

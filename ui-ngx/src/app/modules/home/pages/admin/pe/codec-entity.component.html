@@ -1,0 +1,79 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="mat-padding flex flex-col">
+  <form [formGroup]="entityForm">
+    <fieldset [disabled]="(isLoading$ | async) || !isEdit">
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>codec.name</mat-label>
+        <input matInput formControlName="name" required maxlength="255"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>codec.vendor</mat-label>
+        <input matInput formControlName="vendor"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>codec.model</mat-label>
+        <input matInput formControlName="model"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>codec.category</mat-label>
+        <input matInput formControlName="category" placeholder="LoRaWAN, BLE, generic, …"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Description</mat-label>
+        <textarea matInput formControlName="description" cdkTextareaAutosize cdkAutosizeMinRows="1" rows="1"></textarea>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Decoder language</mat-label>
+        <mat-select formControlName="decoderType" required>
+          <mat-option value="JS">JavaScript</mat-option>
+          <mat-option value="TBEL">TBEL</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>codec.script</mat-label>
+        <textarea matInput formControlName="decoderFunction" rows="12" required
+                  style="font-family: monospace; font-size: 12px;"
+                  placeholder="function Decoder(bytes, port) { return { temperature: bytes[0] }; }"></textarea>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Sample input</mat-label>
+        <textarea matInput formControlName="sampleInput" rows="3"
+                  style="font-family: monospace; font-size: 12px;"></textarea>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Expected output</mat-label>
+        <textarea matInput formControlName="sampleOutput" rows="3"
+                  style="font-family: monospace; font-size: 12px;"></textarea>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Documentation URL</mat-label>
+        <input matInput formControlName="documentationUrl"/>
+      </mat-form-field>
+    </fieldset>
+  </form>
+</div>

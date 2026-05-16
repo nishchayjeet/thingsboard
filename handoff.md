@@ -182,6 +182,43 @@ equivalent.
 - **Not yet redeployed** — code/compose/docs only. Next deploy run
   needs to build and ship the new sidecar image.
 
+## Added after the tb-web-report sidecar: migrate PE pages to CE's EntityTableConfig pattern
+
+User feedback: "still only the sidebar is matching with pe but not all functionality and other views". Root cause: the 7 PE pages were built on a custom `<div class="pe-list">` layout rather than CE's standard `EntitiesTableComponent` + `EntityTableConfig` resolver pattern that every other CE/PE page uses (Tenants, Devices, Queues, …). Result: PE-aligned menu but pages that visually diverge — no sortable headers, no search/refresh icons, no `Items per page` paginator, no checkbox bulk-select, no dialog-based create flow.
+
+**Rewrote all 7 PE pages** to the EntityTableConfig pattern. Now they share the same table chrome as the rest of the app.
+
+- New files: `<feature>-table-config.resolver.ts` (column definitions, fetch/save/delete wiring, custom row actions) + `<feature>-entity.component.{ts,html}` (form panel) under `ui-ngx/src/app/modules/home/pages/admin/pe/`.
+- Custom row actions: `Run now` button on the Reports row; `Install` button on Solution templates row.
+- Each entity-component extends `EntityComponent<T>` and implements `buildForm` / `updateForm` / `prepareFormValue`.
+- Forms use Angular Material with PE-style fields (Name, Type, etc.). Complex sub-objects (permissions, schedule.configuration, integration.configuration, solution.bundle) are JSON textareas in v1 — production polish (matrix editor for permissions, cron builder for schedule) is a follow-up.
+- Added 7 PE entity types to the front-end `EntityType` enum (`ROLE`, `SCHEDULED_EVENT`, `REPORT_CONFIG`, `INTEGRATION`, `CONVERTER`, `PAYLOAD_CODEC`, `SOLUTION_TEMPLATE`) with translation map and resource map entries.
+- Added 7 sections of i18n keys to `assets/locale/locale.constant-en_US.json` (`role.*`, `scheduler.*`, `report.*`, `integration.*`, `converter.*`, `codec.*`, `solution.*`).
+- Updated `admin-routing.module.ts` and `features-routing.module.ts` to point routes at `EntitiesTableComponent` with the new resolvers (rather than the old custom components).
+- Updated `admin.module.ts` declarations to register only the new entity-components.
+- Deleted obsolete custom components: `pe/{roles,scheduler-events,reports,integrations,converters,codec-library,solution-templates}.component.{ts,html}` and `pe-pages.scss`.
+- **Compile check passed**: `ng build` succeeds in ~48 s with only pre-existing warnings (no errors from this change).
+
+### Migrated routes
+
+| Feature              | Route                                    | Resolver                          |
+|----------------------|------------------------------------------|-----------------------------------|
+| Roles                | `/security-settings/roles`               | `RolesTableConfigResolver`        |
+| Scheduler events     | `/features/scheduler`                    | `ScheduledEventsTableConfigResolver` |
+| Reports              | `/reporting/templates`                   | `ReportsTableConfigResolver`      |
+| Integrations         | `/integrationsCenter/integrations`       | `IntegrationsTableConfigResolver` |
+| Data converters      | `/integrationsCenter/converters`         | `ConvertersTableConfigResolver`   |
+| Device library       | `/integrationsCenter/codec-library`      | `CodecsTableConfigResolver`       |
+| Solution templates   | `/solutionTemplates`                     | `SolutionsTableConfigResolver`    |
+
+### Known follow-ups for production polish
+
+- **Permission matrix editor** for Roles (currently a JSON textarea).
+- **Cron-builder widget** for Scheduler events (currently free-text cron string).
+- **Dashboard picker** for Reports (currently a UUID input — should use CE's `tb-dashboard-autocomplete`).
+- **Type-conditional configuration fields** for Integrations (each IntegrationType has its own config shape — currently one JSON textarea).
+- **Type-conditional schedule fields** (TIMER → interval; CRON → expression; WEEKLY/MONTHLY → cron-style picker).
+
 ## Next steps
 
 In rough priority order:

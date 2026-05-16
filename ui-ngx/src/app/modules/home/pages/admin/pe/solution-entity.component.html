@@ -1,0 +1,53 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="mat-padding flex flex-col">
+  <form [formGroup]="entityForm">
+    <fieldset [disabled]="(isLoading$ | async) || !isEdit">
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>solution.name</mat-label>
+        <input matInput formControlName="name" required maxlength="255"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Title</mat-label>
+        <input matInput formControlName="title"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>solution.category</mat-label>
+        <input matInput formControlName="category"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label translate>solution.description</mat-label>
+        <textarea matInput formControlName="description" cdkTextareaAutosize cdkAutosizeMinRows="2" rows="2"></textarea>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Preview image URL</mat-label>
+        <input matInput formControlName="previewImage"/>
+      </mat-form-field>
+
+      <mat-form-field class="mat-block" appearance="outline">
+        <mat-label>Bundle (JSON: dashboards, ruleChains, deviceProfiles)</mat-label>
+        <textarea matInput formControlName="bundle" rows="12"
+                  style="font-family: monospace; font-size: 12px;"></textarea>
+      </mat-form-field>
+    </fieldset>
+  </form>
+</div>
