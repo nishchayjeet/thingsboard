@@ -24,11 +24,18 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.id.ReportConfigId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.report.ReportConfig;
 import org.thingsboard.server.dao.report.ReportConfigService;
+import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
+import org.thingsboard.server.service.security.model.SecurityUser;
+import org.thingsboard.server.service.security.model.UserPrincipal;
+import org.thingsboard.server.service.security.model.token.JwtTokenFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,6 +63,8 @@ public class ReportRunner {
 
     private final ReportGenerator generator;
     private final ReportConfigService reportConfigService;
+    private final UserService userService;
+    private final JwtTokenFactory jwtTokenFactory;
     private final Optional<JavaMailSender> javaMailSender;
 
     public void run(TenantId tenantId, ReportConfigId id) {
@@ -67,7 +76,8 @@ public class ReportRunner {
         long now = System.currentTimeMillis();
         try {
             String url = buildDashboardUrl(report);
-            Path output = generator.generate(report, url);
+            String jwt = issueRenderToken(tenantId);
+            Path output = generator.generate(report, url, jwt);
             try {
                 send(report, output);
                 reportConfigService.recordRun(id, now, "SUCCESS", null);
@@ -84,6 +94,29 @@ public class ReportRunner {
         StringBuilder sb = new StringBuilder(baseUrl).append("/dashboard/").append(report.getDashboardId().getId());
         if (report.getStateId() != null) sb.append("?state=").append(report.getStateId());
         return sb.toString();
+    }
+
+    /**
+     * Mint a short-ish-lived access JWT impersonating the tenant's first admin user, so the headless
+     * browser (run by tb-web-report or the in-process chromium fork) can render private dashboards.
+     * Returns {@code null} if no tenant admin exists (e.g. fresh tenant, or scheduler firing for an
+     * orphaned config) — the renderer will then fall back to an unauthenticated page load.
+     */
+    private String issueRenderToken(TenantId tenantId) {
+        try {
+            PageData<User> admins = userService.findTenantAdmins(tenantId, new PageLink(1));
+            if (admins.getData().isEmpty()) {
+                log.warn("No tenant admin found for tenant {} — report will render unauthenticated", tenantId);
+                return null;
+            }
+            User user = admins.getData().get(0);
+            UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, user.getEmail());
+            SecurityUser securityUser = new SecurityUser(user, true, principal);
+            return jwtTokenFactory.createAccessJwtToken(securityUser).token();
+        } catch (Exception e) {
+            log.warn("Failed to mint render token for tenant {}: {}", tenantId, e.getMessage());
+            return null;
+        }
     }
 
     private void send(ReportConfig report, Path attachment) throws Exception {

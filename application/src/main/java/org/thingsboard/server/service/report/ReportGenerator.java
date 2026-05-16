@@ -15,6 +15,7 @@
  */
 package org.thingsboard.server.service.report;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,21 +30,20 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Snapshots a tenant dashboard to a PDF or PNG using a headless Chromium/Chrome binary.
+ * Snapshots a tenant dashboard to a PDF or PNG. Two backends are supported:
  *
- * Deployment requirements:
- *   • A Chrome/Chromium binary must be installed on the report-running host; configure its path via
- *     {@code report.chrome.binary} (default {@code chromium}).
- *   • The report runner must be able to log in to the UI on behalf of the tenant. For now this uses
- *     a short-lived JWT passed via the URL fragment; for a hardened deployment, replace with a
- *     dedicated service account.
+ *   1. Out-of-process microservice (preferred, mirrors PE):
+ *      Enabled when {@code reports.server.endpoint-url} is set. Renders via a
+ *      separate tb-web-report container running puppeteer + Chrome.
  *
- * The PE platform uses a clustered headless-browser pool. This implementation forks a process per
- * report, which is fine for low report volumes but should be replaced with a long-running CDP worker
- * for high throughput.
+ *   2. In-process Chromium fork (fallback):
+ *      Forks the {@code chromium} binary directly with {@code --print-to-pdf} / {@code --screenshot}.
+ *      Useful for development hosts that already have Chromium installed; not recommended for
+ *      production because it blocks a Java worker thread per report.
  */
 @Component
 @TbCoreComponent
+@RequiredArgsConstructor
 @Slf4j
 public class ReportGenerator {
 
@@ -56,7 +56,17 @@ public class ReportGenerator {
     @Value("${report.chrome.window-size:1600,1200}")
     private String windowSize;
 
-    public Path generate(ReportConfig config, String dashboardUrl) throws IOException, InterruptedException {
+    private final WebReportClient webReportClient;
+
+    public Path generate(ReportConfig config, String dashboardUrl, String jwt) throws IOException, InterruptedException {
+        if (webReportClient.isEnabled()) {
+            log.debug("Delegating report {} to tb-web-report microservice", config.getName());
+            return webReportClient.generate(config, dashboardUrl, jwt);
+        }
+        return forkChromium(config, dashboardUrl);
+    }
+
+    private Path forkChromium(ReportConfig config, String dashboardUrl) throws IOException, InterruptedException {
         Path output = Files.createTempFile("tb-report-", suffix(config.getFormat()));
         List<String> cmd = new ArrayList<>();
         cmd.add(chromeBinary);
