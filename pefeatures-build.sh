@@ -100,9 +100,12 @@ build() {
   ( cd "${SCRIPT_DIR}" && mvn clean install ${mvn_flags} )
 
   log "mvn build tb-node Docker image"
+  # When invoking via -f, maven.multiModuleProjectDirectory points at msa/tb-node/
+  # so ${main.dir} mis-resolves. Pin main.dir to the repo root explicitly.
   ( cd "${SCRIPT_DIR}" && mvn -f msa/tb-node/pom.xml verify \
       -DskipTests \
       -Dlicense.skip=true \
+      -Dmain.dir="${SCRIPT_DIR}" \
       -Ddockerfile.skip=false )
 
   # The Maven build tags as thingsboard/tb-node:latest + thingsboard/tb-node:<version>

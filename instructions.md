@@ -117,23 +117,38 @@ image. Subsequent rebuilds (Java-only changes) are ~ 90 seconds.
 
 ### 2b. Smoke test
 
-```bash
-# UI:
-open http://192.168.69.16:8000
+Open the UI in your browser. On the deploy server use the LAN URL; from the
+machine running the stack itself, `http://localhost:8080` works:
 
-# REST sanity (sysadmin login + tenant token):
+```bash
+open http://192.168.69.16:8000   # remote stack
+# or, if you're on the host running docker compose:
+open http://localhost:8080
+```
+
+You should see the ThingsBoard login page. Use the following default
+credentials:
+
+| Role                  | Email                       | Password   | With demo data | Clean install |
+|-----------------------|-----------------------------|------------|:--------------:|:-------------:|
+| System Administrator  | `sysadmin@thingsboard.org`  | `sysadmin` | ✅             | ✅            |
+| Tenant Administrator  | `tenant@thingsboard.org`    | `tenant`   | ✅             | ❌            |
+| Customer User         | `customer@thingsboard.org`  | `customer` | ✅             | ❌            |
+
+> **Clean install:** only the System Administrator exists. Log in, create
+> a tenant + tenant admin user, then proceed with PE-feature testing.
+> **Demo data:** start the first boot with `LOAD_DEMO: "true"` in the
+> compose file to also get the seeded Tenant / Customer accounts above.
+
+REST sanity (no UI):
+
+```bash
 curl -s http://192.168.69.16:8000/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"tenant@thingsboard.org","password":"tenant"}' | jq .token
 ```
 
-**Default credentials** (change immediately in production):
-
-| Role       | Email                          | Password   |
-|------------|--------------------------------|------------|
-| Sysadmin   | `sysadmin@thingsboard.org`     | `sysadmin` |
-| Tenant     | `tenant@thingsboard.org`       | `tenant`   |
-| Customer   | `customer@thingsboard.org`     | `customer` |
+**Change every default password immediately in production.**
 
 Port map of the deployed stack:
 
