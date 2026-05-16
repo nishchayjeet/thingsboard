@@ -72,7 +72,14 @@ public enum EntityType {
             return "AI model";
         }
     },
-    API_KEY(44);
+    API_KEY(44),
+    ROLE(100),
+    SCHEDULED_EVENT(101, "scheduled_event"),
+    REPORT_CONFIG(102, "report_config"),
+    INTEGRATION(103),
+    CONVERTER(104),
+    PAYLOAD_CODEC(105, "payload_codec_library"),
+    SOLUTION_TEMPLATE(106, "solution_template");
 
     @Getter
     private final int protoNumber; // Corresponds to EntityTypeProto
