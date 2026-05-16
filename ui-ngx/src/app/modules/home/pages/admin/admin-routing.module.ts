@@ -49,7 +49,6 @@ import { JsLibraryTableConfigResolver } from '@home/pages/admin/resource/js-libr
 import { TrendzSettingsComponent } from '@home/pages/admin/trendz-settings.component';
 import { aiModelRoutes } from '@home/pages/ai-model/ai-model-routing.module';
 import { WhiteLabelingComponent } from '@home/pages/admin/white-labeling.component';
-import { SchedulerEventsComponent } from '@home/pages/admin/pe/scheduler-events.component';
 import { RolesComponent } from '@home/pages/admin/pe/roles.component';
 import { IntegrationsComponent } from '@home/pages/admin/pe/integrations.component';
 import { ConvertersComponent } from '@home/pages/admin/pe/converters.component';
@@ -263,82 +262,6 @@ const routes: Routes = [
         }
       },
       {
-        path: 'white-labeling',
-        component: WhiteLabelingComponent,
-        canDeactivate: [ConfirmOnExitGuard],
-        data: {
-          auth: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
-          title: 'white-labeling.white-labeling',
-          breadcrumb: {
-            label: 'white-labeling.white-labeling',
-            icon: 'palette'
-          }
-        }
-      },
-      {
-        path: 'scheduler',
-        component: SchedulerEventsComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN],
-          title: 'Scheduler',
-          breadcrumb: { label: 'Scheduler', icon: 'schedule' }
-        }
-      },
-      {
-        path: 'roles',
-        component: RolesComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN],
-          title: 'Roles',
-          breadcrumb: { label: 'Roles', icon: 'admin_panel_settings' }
-        }
-      },
-      {
-        path: 'integrations',
-        component: IntegrationsComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN],
-          title: 'Integrations',
-          breadcrumb: { label: 'Integrations', icon: 'input' }
-        }
-      },
-      {
-        path: 'converters',
-        component: ConvertersComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN],
-          title: 'Data converters',
-          breadcrumb: { label: 'Data converters', icon: 'transform' }
-        }
-      },
-      {
-        path: 'codec-library',
-        component: CodecLibraryComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
-          title: 'Device library',
-          breadcrumb: { label: 'Device library', icon: 'devices_other' }
-        }
-      },
-      {
-        path: 'solution-templates',
-        component: SolutionTemplatesComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN],
-          title: 'Solution templates',
-          breadcrumb: { label: 'Solution templates', icon: 'auto_awesome_mosaic' }
-        }
-      },
-      {
-        path: 'reports',
-        component: ReportsComponent,
-        data: {
-          auth: [Authority.TENANT_ADMIN],
-          title: 'Reports',
-          breadcrumb: { label: 'Reports', icon: 'description' }
-        }
-      },
-      {
         path: 'outgoing-mail',
         component: MailServerComponent,
         canDeactivate: [ConfirmOnExitGuard],
@@ -520,7 +443,102 @@ const routes: Routes = [
         }
       },
       ...oAuth2Routes,
-      ...auditLogsRoutes
+      ...auditLogsRoutes,
+      {
+        path: 'roles',
+        component: RolesComponent,
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'Roles',
+          breadcrumb: { label: 'Roles', icon: 'admin_panel_settings' }
+        }
+      }
+    ]
+  },
+  // ---------- PE-compatible top-level routes ----------
+  {
+    path: 'white-labeling',
+    data: {
+      auth: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
+      breadcrumb: { menuId: MenuId.pe_white_labeling }
+    },
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'whiteLabel' },
+      {
+        path: 'whiteLabel',
+        component: WhiteLabelingComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
+          title: 'white-labeling.white-labeling',
+          breadcrumb: { label: 'white-labeling.white-labeling', icon: 'format_paint' }
+        }
+      }
+    ]
+  },
+  {
+    path: 'reporting',
+    data: {
+      auth: [Authority.TENANT_ADMIN],
+      breadcrumb: { menuId: MenuId.pe_reports }
+    },
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'templates' },
+      {
+        path: 'templates',
+        component: ReportsComponent,
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'Report templates',
+          breadcrumb: { label: 'Report templates', icon: 'description' }
+        }
+      }
+    ]
+  },
+  {
+    path: 'solutionTemplates',
+    component: SolutionTemplatesComponent,
+    data: {
+      auth: [Authority.TENANT_ADMIN],
+      title: 'Solution templates',
+      breadcrumb: { menuId: MenuId.pe_solution_templates }
+    }
+  },
+  {
+    path: 'integrationsCenter',
+    data: {
+      auth: [Authority.TENANT_ADMIN],
+      breadcrumb: { menuId: MenuId.pe_integration_center }
+    },
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'integrations' },
+      {
+        path: 'integrations',
+        component: IntegrationsComponent,
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'Integrations',
+          breadcrumb: { menuId: MenuId.pe_integrations }
+        }
+      },
+      {
+        path: 'converters',
+        component: ConvertersComponent,
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'Data converters',
+          breadcrumb: { menuId: MenuId.pe_converters }
+        }
+      },
+      {
+        path: 'codec-library',
+        component: CodecLibraryComponent,
+        data: {
+          auth: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
+          title: 'Device library',
+          breadcrumb: { menuId: MenuId.pe_codec_library }
+        }
+      }
     ]
   }
 ];

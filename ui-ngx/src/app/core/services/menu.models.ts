@@ -755,47 +755,47 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
   [
     MenuId.pe_white_labeling,
     { id: MenuId.pe_white_labeling, name: 'White labeling', type: 'link',
-      path: '/settings/white-labeling', icon: 'palette' }
+      path: '/white-labeling', icon: 'format_paint' }
   ],
   [
     MenuId.pe_scheduler,
     { id: MenuId.pe_scheduler, name: 'Scheduler', type: 'link',
-      path: '/settings/scheduler', icon: 'schedule' }
+      path: '/features/scheduler', icon: 'schedule' }
   ],
   [
     MenuId.pe_roles,
     { id: MenuId.pe_roles, name: 'Roles', type: 'link',
-      path: '/settings/roles', icon: 'admin_panel_settings' }
+      path: '/security-settings/roles', icon: 'security' }
   ],
   [
     MenuId.pe_integration_center,
-    { id: MenuId.pe_integration_center, name: 'Integration center', type: 'toggle',
-      path: '/settings', icon: 'input' }
+    { id: MenuId.pe_integration_center, name: 'Integrations', type: 'toggle',
+      path: '/integrationsCenter', icon: 'integration_instructions' }
   ],
   [
     MenuId.pe_integrations,
     { id: MenuId.pe_integrations, name: 'Integrations', type: 'link',
-      path: '/settings/integrations', icon: 'input' }
+      path: '/integrationsCenter/integrations', icon: 'input' }
   ],
   [
     MenuId.pe_converters,
     { id: MenuId.pe_converters, name: 'Data converters', type: 'link',
-      path: '/settings/converters', icon: 'transform' }
+      path: '/integrationsCenter/converters', icon: 'transform' }
   ],
   [
     MenuId.pe_codec_library,
     { id: MenuId.pe_codec_library, name: 'Device library', type: 'link',
-      path: '/settings/codec-library', icon: 'devices_other' }
+      path: '/integrationsCenter/codec-library', icon: 'devices_other' }
   ],
   [
     MenuId.pe_solution_templates,
     { id: MenuId.pe_solution_templates, name: 'Solution templates', type: 'link',
-      path: '/settings/solution-templates', icon: 'auto_awesome_mosaic' }
+      path: '/solutionTemplates', icon: 'apps' }
   ],
   [
     MenuId.pe_reports,
-    { id: MenuId.pe_reports, name: 'Reports', type: 'link',
-      path: '/settings/reports', icon: 'description' }
+    { id: MenuId.pe_reports, name: 'Reporting', type: 'link',
+      path: '/reporting', icon: 'mdi:chart-box-multiple' }
   ]
 ]);
 
@@ -906,10 +906,9 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.asset_profiles}
         ]
       },
+      {id: MenuId.pe_reports},
+      {id: MenuId.pe_solution_templates},
       {id: MenuId.customers},
-      {id: MenuId.pe_roles},
-      {id: MenuId.calculated_fields},
-      {id: MenuId.rule_chains},
       {
         id: MenuId.pe_integration_center,
         pages: [
@@ -918,9 +917,8 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.pe_codec_library}
         ]
       },
-      {id: MenuId.pe_scheduler},
-      {id: MenuId.pe_reports},
-      {id: MenuId.pe_solution_templates},
+      {id: MenuId.calculated_fields},
+      {id: MenuId.rule_chains},
       {
         id: MenuId.edge_management,
         pages: [
@@ -932,7 +930,8 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         id: MenuId.features,
         pages: [
           {id: MenuId.otaUpdates},
-          {id: MenuId.version_control}
+          {id: MenuId.version_control},
+          {id: MenuId.pe_scheduler}
         ]
       },
       {
@@ -969,11 +968,11 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         ]
       },
       {id: MenuId.api_usage},
+      {id: MenuId.pe_white_labeling},
       {
         id: MenuId.settings,
         pages: [
           {id: MenuId.home_settings},
-          {id: MenuId.pe_white_labeling},
           {id: MenuId.notification_settings},
           {id: MenuId.repository_settings},
           {id: MenuId.auto_commit_settings},
@@ -984,6 +983,7 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
       {
         id: MenuId.security_settings,
         pages: [
+          {id: MenuId.pe_roles},
           {id: MenuId.audit_log},
           {
             id: MenuId.oauth2,

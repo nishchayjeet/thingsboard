@@ -20,6 +20,7 @@ import { NgModule } from '@angular/core';
 import { otaUpdatesRoutes } from '@home/pages/ota-update/ota-update-routing.module';
 import { vcRoutes } from '@home/pages/vc/vc-routing.module';
 import { MenuId } from '@core/services/menu.models';
+import { SchedulerEventsComponent } from '@home/pages/admin/pe/scheduler-events.component';
 
 const routes: Routes = [
   {
@@ -40,7 +41,16 @@ const routes: Routes = [
         }
       },
       ...otaUpdatesRoutes,
-      ...vcRoutes
+      ...vcRoutes,
+      {
+        path: 'scheduler',
+        component: SchedulerEventsComponent,
+        data: {
+          auth: [Authority.TENANT_ADMIN],
+          title: 'Scheduler',
+          breadcrumb: { menuId: MenuId.pe_scheduler }
+        }
+      }
     ]
   }
 ];
